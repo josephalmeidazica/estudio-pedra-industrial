@@ -42,6 +42,13 @@ test("public list works without a token; admin create requires one", async () =>
   expect(await anon.products.list()).toHaveLength(1);
 });
 
+test("products.update/delete on a bogus id rejects with NOT_FOUND", async () => {
+  const db = freshDb();
+  const admin = appRouter.createCaller(ctxFor(db, "test-token"));
+  await expect(admin.products.update({ id: 9999, name: "Ghost" })).rejects.toMatchObject({ code: "NOT_FOUND" });
+  await expect(admin.products.delete({ id: 9999 })).rejects.toMatchObject({ code: "NOT_FOUND" });
+});
+
 test("images.add rejects invalid data URLs", async () => {
   const db = freshDb();
   const admin = appRouter.createCaller(ctxFor(db, "test-token"));

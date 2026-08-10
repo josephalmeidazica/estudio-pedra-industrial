@@ -1,3 +1,4 @@
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { adminProcedure, publicProcedure, router } from "../trpc";
 import * as repo from "../db/products.repo";
@@ -27,14 +28,17 @@ export const productsRouter = router({
     .mutation(({ ctx, input }) => repo.createProduct(ctx.db, input)),
   update: adminProcedure
     .input(createInput.partial().extend({ id: z.number().int() }))
-    .mutation(({ ctx, input }) => {
+    .mutation(async ({ ctx, input }) => {
       const { id, ...patch } = input;
-      return repo.updateProduct(ctx.db, id, patch);
+      const product = await repo.updateProduct(ctx.db, id, patch);
+      if (!product) throw new TRPCError({ code: "NOT_FOUND", message: "Product not found" });
+      return product;
     }),
   delete: adminProcedure
     .input(z.object({ id: z.number().int() }))
     .mutation(async ({ ctx, input }) => {
       const urls = await repo.deleteProduct(ctx.db, input.id);
+      if (!urls) throw new TRPCError({ code: "NOT_FOUND", message: "Product not found" });
       urls.forEach(deleteImageByUrl);
       return { success: true as const };
     }),

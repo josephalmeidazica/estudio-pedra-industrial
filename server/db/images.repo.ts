@@ -45,12 +45,11 @@ export async function reorderImages(
   productId: number,
   orderedIds: number[]
 ): Promise<void> {
-  for (let i = 0; i < orderedIds.length; i++) {
-    await db
-      .update(productImages)
-      .set({ sortOrder: i })
-      .where(eq(productImages.id, orderedIds[i]));
-  }
+  db.transaction((tx) => {
+    for (let i = 0; i < orderedIds.length; i++) {
+      tx.update(productImages).set({ sortOrder: i }).where(eq(productImages.id, orderedIds[i])).run();
+    }
+  });
 }
 
 export async function setCover(db: DB, imageId: number): Promise<void> {

@@ -91,7 +91,7 @@ export async function updateProduct(
   db: DB,
   id: number,
   patch: UpdateProductPatch
-): Promise<Product> {
+): Promise<Product | undefined> {
   const values: Record<string, unknown> = { updatedAt: new Date() };
   const fields = [
     "name", "description", "category", "materials",
@@ -112,7 +112,10 @@ export async function updateProduct(
   return row;
 }
 
-export async function deleteProduct(db: DB, id: number): Promise<string[]> {
+/** Returns the deleted product's image urls, or undefined if no such product exists. */
+export async function deleteProduct(db: DB, id: number): Promise<string[] | undefined> {
+  const existing = await db.select({ id: products.id }).from(products).where(eq(products.id, id)).limit(1);
+  if (existing.length === 0) return undefined;
   const imgs = await db
     .select({ url: productImages.url })
     .from(productImages)
@@ -122,7 +125,9 @@ export async function deleteProduct(db: DB, id: number): Promise<string[]> {
 }
 
 export async function reorderProducts(db: DB, orderedIds: number[]): Promise<void> {
-  for (let i = 0; i < orderedIds.length; i++) {
-    await db.update(products).set({ sortOrder: i }).where(eq(products.id, orderedIds[i]));
-  }
+  db.transaction((tx) => {
+    for (let i = 0; i < orderedIds.length; i++) {
+      tx.update(products).set({ sortOrder: i }).where(eq(products.id, orderedIds[i])).run();
+    }
+  });
 }

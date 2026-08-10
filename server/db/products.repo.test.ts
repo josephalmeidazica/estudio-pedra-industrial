@@ -68,6 +68,12 @@ test("delete returns image urls and cascades", async () => {
   expect(await repo.getBySlug(db, "has-images")).toBeNull();
 });
 
+test("update and delete on a bogus id return undefined instead of throwing", async () => {
+  const db = freshDb();
+  expect(await repo.updateProduct(db, 9999, { name: "Ghost" })).toBeUndefined();
+  expect(await repo.deleteProduct(db, 9999)).toBeUndefined();
+});
+
 test("reorder sets sortOrder by index", async () => {
   const db = freshDb();
   const a = await repo.createProduct(db, { name: "A" });

@@ -3,11 +3,14 @@ import { drizzle, type BetterSQLite3Database } from "drizzle-orm/better-sqlite3"
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import * as schema from "./schema";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const PROJECT_ROOT = path.resolve(__dirname, "..", "..");
+// Anchored to process.cwd() rather than __dirname: both `npm run dev` (tsx,
+// unbundled source under server/db/) and `npm start` (esbuild bundle at
+// dist/index.js) are launched from the repo root, so cwd is stable in both —
+// unlike __dirname, which points into dist/ after bundling and would resolve
+// this two levels too far up.
+const PROJECT_ROOT = process.cwd();
 const MIGRATIONS_DIR = path.join(PROJECT_ROOT, "drizzle");
 
 export type DB = BetterSQLite3Database<typeof schema>;

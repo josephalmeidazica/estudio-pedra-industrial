@@ -2,7 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { adminProcedure, router } from "../trpc";
 import * as repo from "../db/images.repo";
-import { decodeDataUrl, saveImageBuffer } from "../lib/images";
+import { decodeDataUrl, deleteImageByUrl, saveImageBuffer } from "../lib/images";
 
 export const imagesRouter = router({
   add: adminProcedure
@@ -20,7 +20,6 @@ export const imagesRouter = router({
   delete: adminProcedure
     .input(z.object({ imageId: z.number().int() }))
     .mutation(async ({ ctx, input }) => {
-      const { deleteImageByUrl } = await import("../lib/images");
       const url = await repo.deleteImage(ctx.db, input.imageId);
       if (url) deleteImageByUrl(url);
       return { success: true as const };

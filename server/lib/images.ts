@@ -1,10 +1,10 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const PROJECT_ROOT = path.resolve(__dirname, "..", "..");
+// Anchored to process.cwd() — see server/db/client.ts for why this must not
+// be derived from __dirname (breaks once the server is bundled to dist/).
+const PROJECT_ROOT = process.cwd();
 
 function uploadsDir(): string {
   return process.env.UPLOADS_DIR ?? path.join(PROJECT_ROOT, ".data", "uploads");
