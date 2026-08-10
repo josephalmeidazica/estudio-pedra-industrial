@@ -34,8 +34,8 @@ async function startServer() {
     await setupVite(app, server);
   }
 
-  if (!process.env.ADMIN_API_TOKEN) {
-    console.warn("[auth] ADMIN_API_TOKEN is not set — write endpoints are disabled. Set it in .env.");
+  if (!process.env.ADMIN_PASSWORD) {
+    console.warn("[auth] ADMIN_PASSWORD is not set — write endpoints are disabled. Set it in .env.");
   }
 
   const port = Number(process.env.PORT) || 3000;

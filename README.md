@@ -57,7 +57,7 @@ catalog page). Everything else — all mutations (create/update/delete/reorder f
 products and images) plus the admin read `products.listAll` — requires a bearer token.
 
 1. Copy `.env.example` to `.env` (if you haven't already).
-2. Generate a token and set it as `ADMIN_API_TOKEN` in `.env`:
+2. Generate a token and set it as `ADMIN_PASSWORD` in `.env`:
    ```bash
    node -e "console.log(require('crypto').randomBytes(24).toString('hex'))"
    ```
@@ -67,11 +67,12 @@ products and images) plus the admin read `products.listAll` — requires a beare
 
 `.env` is git-ignored; never commit a real token value.
 
-### Edit mode in the catalog
+### Admin panel (/admin)
 
-The catalog page has an "Editar" button. Click it and paste your `ADMIN_API_TOKEN` to
-unlock image upload/remove for products directly from the UI. Without a valid token,
-the catalog remains a read-only public view.
+The site has a password-protected admin panel at **`/admin`**. Log in with your
+`ADMIN_PASSWORD` (from `.env`) to manage the full catalog — create/edit/delete/reorder
+products and upload/remove/reorder their images (set a cover). Public visitors just
+browse the catalog and use the cart; no admin controls are shown there.
 
 ### API (tRPC)
 
