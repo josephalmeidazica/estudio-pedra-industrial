@@ -1,0 +1,13 @@
+# Reverse proxy + automatic HTTPS (Let's Encrypt) for Estúdio Pedra Industrial.
+#
+# On the VPS:
+#   1. Replace example.com below with your real domain (DNS A record -> VPS IP first).
+#   2. sudo cp deploy/Caddyfile /etc/caddy/Caddyfile
+#   3. sudo systemctl reload caddy
+#
+# The app listens on localhost:3000; Caddy terminates TLS and proxies to it.
+
+example.com {
+    encode zstd gzip
+    reverse_proxy localhost:3000
+}
