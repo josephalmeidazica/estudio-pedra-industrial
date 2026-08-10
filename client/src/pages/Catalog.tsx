@@ -4,7 +4,6 @@
   Foco em aço carbono e MDF
 */
 
-import { Button } from "@/components/ui/button";
 import { ArrowLeft, Plus, X, ChevronLeft, ChevronRight, Tag } from "lucide-react";
 import { Link } from "wouter";
 import { useState } from "react";
@@ -14,105 +13,10 @@ import { CartWidget } from "@/components/cart/CartWidget";
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
 
 export default function Catalog() {
-  const utils = trpc.useUtils();
   const { data: products = [] } = trpc.products.list.useQuery();
-  const addImageMutation = trpc.images.add.useMutation();
-  const deleteImageMutation = trpc.images.delete.useMutation();
-
-  const [adminToken, setAdminToken] = useState<string | null>(
-    typeof localStorage !== "undefined" ? localStorage.getItem("eps_admin_token") : null
-  );
-  const editMode = Boolean(adminToken);
-
-  const enableEditMode = () => {
-    const token = window.prompt("Cole o token de administrador para editar:");
-    if (!token) return;
-    localStorage.setItem("eps_admin_token", token.trim());
-    setAdminToken(token.trim());
-  };
-  const exitEditMode = () => {
-    localStorage.removeItem("eps_admin_token");
-    setAdminToken(null);
-  };
 
   const [selectedProduct, setSelectedProduct] = useState<number | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [uploadingProduct, setUploadingProduct] = useState<string | null>(null);
-
-  // Compress image to reduce file size
-  const compressImage = (dataUrl: string, quality: number = 0.6): Promise<string> => {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return resolve(dataUrl);
-        
-        // Resize if too large
-        let width = img.width;
-        let height = img.height;
-        const maxWidth = 1200;
-        const maxHeight = 1200;
-        
-        if (width > maxWidth || height > maxHeight) {
-          const ratio = Math.min(maxWidth / width, maxHeight / height);
-          width *= ratio;
-          height *= ratio;
-        }
-        
-        canvas.width = width;
-        canvas.height = height;
-        ctx.drawImage(img, 0, 0, width, height);
-        
-        const compressedUrl = canvas.toDataURL('image/jpeg', quality);
-        resolve(compressedUrl);
-      };
-      img.src = dataUrl;
-    });
-  };
-
-  const handleImageUpload = async (productId: number, files: FileList) => {
-    setUploadingProduct(String(productId));
-    for (const file of Array.from(files)) {
-      const dataUrl: string = await new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target?.result as string);
-        reader.readAsDataURL(file);
-      });
-      let compressed = await compressImage(dataUrl, 0.5);
-      try {
-        await addImageMutation.mutateAsync({ productId, dataUrl: compressed });
-      } catch {
-        compressed = await compressImage(dataUrl, 0.3);
-        try {
-          await addImageMutation.mutateAsync({ productId, dataUrl: compressed });
-        } catch {
-          alert("Erro ao salvar imagem. Verifique o token de edição e tente uma imagem menor.");
-        }
-      }
-    }
-    await utils.products.list.invalidate();
-    setUploadingProduct(null);
-  };
-
-  const removeImage = async (_productId: number, imageId: number) => {
-    await deleteImageMutation.mutateAsync({ imageId });
-    await utils.products.list.invalidate();
-  };
-
-  const handleAddPhotosClick = (productId: number) => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.multiple = true;
-    input.accept = 'image/*';
-    input.onchange = (e) => {
-      const files = (e.target as HTMLInputElement).files;
-      if (files) {
-        handleImageUpload(productId, files);
-      }
-    };
-    input.click();
-  };
 
   const openGallery = (productId: number) => {
     const product = products.find(p => p.id === productId);
@@ -197,15 +101,6 @@ export default function Catalog() {
             </Link>
             <div className="flex items-center gap-4">
               <CartWidget />
-              {editMode ? (
-                <button onClick={exitEditMode} className="text-xs underline opacity-60">
-                  Sair do modo edição
-                </button>
-              ) : (
-                <button onClick={enableEditMode} className="text-xs underline opacity-60">
-                  Editar
-                </button>
-              )}
             </div>
           </div>
           <h1 className="text-6xl md:text-7xl heading-display text-foreground mb-6">
@@ -255,19 +150,6 @@ export default function Catalog() {
                           Ver galeria ({product.images.length})
                         </p>
                       </div>
-
-                      {/* Remove Button */}
-                      {editMode && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeImage(product.id, product.images[0].id);
-                          }}
-                          className="absolute top-4 left-4 bg-red-500/90 hover:bg-red-600 text-white p-2 rounded opacity-0 group-hover/image-area:opacity-100 transition-opacity duration-300"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      )}
                     </>
                   ) : (
                     <div className="text-center">
@@ -295,17 +177,6 @@ export default function Catalog() {
 
                   {/* Add to Cart Button */}
                   <AddToCartButton name={product.name} />
-
-                  {/* Add Photos Button */}
-                  {editMode && (
-                    <Button
-                      onClick={() => handleAddPhotosClick(product.id)}
-                      disabled={uploadingProduct === String(product.id)}
-                      className="w-full mt-3 bg-foreground text-background hover:bg-secondary text-sm px-4 py-2 rounded heading-secondary transition-all duration-300"
-                    >
-                      {uploadingProduct === String(product.id) ? 'Enviando...' : product.images.length > 0 ? 'Adicionar Mais' : 'Adicionar Fotos'}
-                    </Button>
-                  )}
                 </div>
               </div>
             ))}
