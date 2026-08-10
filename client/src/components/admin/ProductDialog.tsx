@@ -95,12 +95,12 @@ export function ProductDialog({ open, onOpenChange, product }: Props) {
 
     try {
       if (currentId == null) {
-        const created = await create.mutateAsync(base);
-        setCurrentId(created.id); // switch to edit mode so images can be added
+        await create.mutateAsync(base);
       } else {
         await update.mutateAsync({ id: currentId, ...base });
       }
       await refreshLists();
+      onOpenChange(false);
     } catch {
       alert("Erro ao salvar o produto. Verifique os campos e tente novamente.");
     }
@@ -191,9 +191,8 @@ export function ProductDialog({ open, onOpenChange, product }: Props) {
                 </div>
               ) : (
                 <Button
-                  variant="ghost"
+                  variant="destructive"
                   size="sm"
-                  className="text-destructive"
                   onClick={() => setConfirmingDelete(true)}
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
