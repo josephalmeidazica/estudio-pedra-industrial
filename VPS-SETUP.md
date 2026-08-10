@@ -112,7 +112,7 @@ npm run build
 ## 5. Configure the environment (`.env`)
 
 **What this does:** creates a `.env` file with a secret admin token (used to
-unlock the catalog's "Editar" mode for uploading/removing product photos),
+log in to the `/admin` panel, where you manage products and their images),
 tells the app to run in production mode, and sets the port.
 
 ```bash
@@ -164,8 +164,8 @@ Now open in your browser:
 ```
 http://YOUR_VPS_IP:3000
 ```
-Go to **`/catalogo`** to try the cart. Click **Editar** and paste your
-`ADMIN_PASSWORD` to manage photos.
+Go to **`/catalogo`** to browse and try the cart. To manage products/photos,
+go to **`/admin`** and log in with your `ADMIN_PASSWORD`.
 
 > This exposes the Node app directly — fine for a test. For a real, public site
 > use a domain + HTTPS (7B), which also lets you close port 3000.

@@ -41,7 +41,7 @@ npm run build
 ```bash
 printf 'ADMIN_PASSWORD=%s\nNODE_ENV=production\nPORT=3000\n' \
   "$(node -e "console.log(require('crypto').randomBytes(24).toString('hex'))")" > .env
-cat .env    # copy ADMIN_PASSWORD — paste it into the catalog's "Editar" to manage photos
+cat .env    # copy ADMIN_PASSWORD — log in at /admin to manage products and photos
 ```
 On first start the app creates `.data/app.db` (seeded with 9 products) and
 `.data/uploads/` in the repo folder. **This directory is your database — don't
