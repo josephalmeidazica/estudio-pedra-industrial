@@ -70,24 +70,36 @@ export function ProductDialog({ open, onOpenChange, product }: Props) {
 
   const save = async () => {
     if (!form.name.trim()) return;
+
+    const price = form.price.trim() === "" ? null : Number(form.price);
+    if (price !== null && Number.isNaN(price)) {
+      alert("Preço inválido.");
+      return;
+    }
+
     const base = {
       name: form.name.trim(),
       description: form.description,
       category: form.category,
       materials: form.materials,
       dimensions: form.dimensions,
-      price: form.price.trim() === "" ? null : Number(form.price),
+      price: price,
       featured: form.featured,
       published: form.published,
       ...(form.slug.trim() ? { slug: form.slug.trim() } : {}),
     };
-    if (currentId == null) {
-      const created = await create.mutateAsync(base);
-      setCurrentId(created.id); // switch to edit mode so images can be added
-    } else {
-      await update.mutateAsync({ id: currentId, ...base });
+
+    try {
+      if (currentId == null) {
+        const created = await create.mutateAsync(base);
+        setCurrentId(created.id); // switch to edit mode so images can be added
+      } else {
+        await update.mutateAsync({ id: currentId, ...base });
+      }
+      await refreshLists();
+    } catch {
+      alert("Erro ao salvar o produto. Verifique os campos e tente novamente.");
     }
-    await refreshLists();
   };
 
   // The current product's fresh images (for the ImageManager) come from listAll.
