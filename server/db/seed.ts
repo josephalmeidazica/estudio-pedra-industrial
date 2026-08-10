@@ -49,6 +49,10 @@ export const DEFAULT_PRODUCT_IMAGES: Record<string, string> = {
  * Attach a default image to any known product that currently has none.
  * Idempotent: only acts when a product has zero images, so it never
  * duplicates and never overrides owner-added photos.
+ *
+ * Tradeoff: the guard is "has zero images", so if the owner later deletes
+ * ALL images from one of the seeded products, its default image is
+ * re-added on the next boot. Acceptable for default illustrative images.
  */
 export async function ensureProductImages(db: DB): Promise<void> {
   for (const [slug, url] of Object.entries(DEFAULT_PRODUCT_IMAGES)) {

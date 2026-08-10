@@ -240,6 +240,7 @@ export default function Catalog() {
                       <img
                         src={product.images[0].url}
                         alt={`${product.name} principal`}
+                        loading="lazy"
                         className="w-full h-full object-cover group-hover/image-area:opacity-80 transition-opacity duration-300"
                       />
 
@@ -281,7 +282,7 @@ export default function Catalog() {
                   <h3 className="heading-secondary text-xl mb-2 text-foreground">
                     {product.name}
                   </h3>
-                  <p className="text-sm text-muted-foreground mb-2 leading-relaxed">
+                  <p className={`text-sm text-muted-foreground leading-relaxed ${product.category ? "mb-2" : "mb-4"}`}>
                     {product.description}
                   </p>
 
@@ -290,9 +291,7 @@ export default function Catalog() {
                       <Tag className="h-3 w-3" />
                       {product.category}
                     </span>
-                  ) : (
-                    <div className="mb-4" />
-                  )}
+                  ) : null}
 
                   {/* Add to Cart Button */}
                   <AddToCartButton name={product.name} />

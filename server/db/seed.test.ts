@@ -58,7 +58,6 @@ test("ensureProductImages does not touch a product that already has an image", a
   await seedIfEmpty(db);
   const p = await repo.getBySlug(db, "mesa-urb");
   // pre-existing owner image
-  await repo.listAll(db); // no-op to keep import used
   const { productImages } = await import("./schema");
   await db.insert(productImages).values({ productId: p!.id, url: "/uploads/owner.jpg", sortOrder: 0 });
   await ensureProductImages(db);
