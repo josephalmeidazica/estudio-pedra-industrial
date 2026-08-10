@@ -148,7 +148,7 @@ export default function Catalog() {
   const currentProduct = selectedProduct ? products.find(p => p.id === selectedProduct) : null;
 
   return (
-    <CartProvider>
+  <CartProvider>
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border bg-background sticky top-0 z-50">
@@ -373,6 +373,6 @@ export default function Catalog() {
         </div>
       )}
     </div>
-    </CartProvider>
+  </CartProvider>
   );
 }

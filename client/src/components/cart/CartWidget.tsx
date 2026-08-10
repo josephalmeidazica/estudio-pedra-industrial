@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetFooter,
   SheetHeader,
   SheetTitle,
@@ -46,6 +47,9 @@ export function CartWidget() {
         <SheetContent className="flex w-full flex-col sm:max-w-md">
           <SheetHeader>
             <SheetTitle>Seu carrinho</SheetTitle>
+            <SheetDescription className="sr-only">
+              Revise os itens do seu carrinho e finalize o pedido pelo WhatsApp.
+            </SheetDescription>
           </SheetHeader>
 
           {items.length === 0 ? (
@@ -94,7 +98,11 @@ export function CartWidget() {
 
           <Separator />
           <SheetFooter className="flex-col gap-3 sm:flex-col sm:space-x-0">
+            <label htmlFor="cart-customer-name" className="sr-only">
+              Seu nome
+            </label>
             <Input
+              id="cart-customer-name"
               placeholder="Seu nome"
               value={name}
               onChange={(e) => setName(e.target.value)}
