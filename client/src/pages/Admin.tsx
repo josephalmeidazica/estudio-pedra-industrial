@@ -51,7 +51,12 @@ export default function Admin() {
   const logout = () => {
     localStorage.removeItem(TOKEN_KEY);
     setToken(null);
-    utils.products.listAll.invalidate();
+    // Don't invalidate/refetch here: the token is already gone from localStorage,
+    // so an in-flight refetch would hit the API unauthenticated and come back 401,
+    // making the login screen flash a misleading "Senha incorreta." after a clean
+    // logout. The query becomes disabled once `token` is null on next render, and
+    // the login screen never reads `listAll.data`, so no refetch is needed.
+    utils.products.listAll.setData(undefined, undefined);
   };
 
   // Login screen
