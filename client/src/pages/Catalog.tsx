@@ -7,100 +7,34 @@
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Plus, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "wouter";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 
 export default function Catalog() {
-  const [products, setProducts] = useState([
-    {
-      id: "estrutura-gaia",
-      name: "Estrutura Gaia",
-      description: "Estrutura modular que se adapta a qualquer espaço",
-      images: [] as any[]
-    },
-    {
-      id: "estante-divisio",
-      name: "Estante Divisio",
-      description: "Estante modular em aço carbono e MDF que divide espaços com elegância",
-      images: [] as any[]
-    },
-    {
-      id: "luminaria-lua",
-      name: "Luminária Lua",
-      description: "Luminária artesanal que traz a serenidade da lua para seus ambientes",
-      images: [] as any[]
-    },
-    {
-      id: "luminaria-sol",
-      name: "Luminária Sol",
-      description: "Luminária que aquece e ilumina com a energia do sol",
-      images: [] as any[]
-    },
-    {
-      id: "mesa-cabeceira-loft",
-      name: "Mesa de Cabeceira Loft",
-      description: "Minimalismo, força e identidade urbana. Opções com gaveta e gaveta + nicho",
-      images: [] as any[]
-    },
-    {
-      id: "mesa-office-l",
-      name: "Mesa Office L",
-      description: "Mesa de escritório em formato L, perfeita para home office",
-      images: [] as any[]
-    },
-    {
-      id: "mesa-urb",
-      name: "Mesa Urb",
-      description: "Mesa urbana em aço carbono com design contemporâneo",
-      images: [] as any[]
-    },
-    {
-      id: "penteadeira-glam",
-      name: "Penteadeira Glam",
-      description: "Penteadeira sofisticada que combina funcionalidade e elegância",
-      images: [] as any[]
-    },
-    {
-      id: "projetos-personalizados",
-      name: "Projetos Personalizados",
-      description: "Crie seu próprio móvel sob medida com nossa equipe",
-      images: [] as any[]
-    },
-  ]);
+  const utils = trpc.useUtils();
+  const { data: products = [] } = trpc.products.list.useQuery();
+  const addImageMutation = trpc.images.add.useMutation();
+  const deleteImageMutation = trpc.images.delete.useMutation();
 
-  const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
+  const [adminToken, setAdminToken] = useState<string | null>(
+    typeof localStorage !== "undefined" ? localStorage.getItem("eps_admin_token") : null
+  );
+  const editMode = Boolean(adminToken);
+
+  const enableEditMode = () => {
+    const token = window.prompt("Cole o token de administrador para editar:");
+    if (!token) return;
+    localStorage.setItem("eps_admin_token", token.trim());
+    setAdminToken(token.trim());
+  };
+  const exitEditMode = () => {
+    localStorage.removeItem("eps_admin_token");
+    setAdminToken(null);
+  };
+
+  const [selectedProduct, setSelectedProduct] = useState<number | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [uploadingProduct, setUploadingProduct] = useState<string | null>(null);
-
-  // tRPC queries and mutations
-  const { data: allImages } = trpc.products.getAllImages.useQuery();
-  const addImageMutation = trpc.products.addImage.useMutation();
-  const deleteImageMutation = trpc.products.deleteImage.useMutation();
-  const { data: productImages } = trpc.products.getImages.useQuery(
-    { productName: selectedProduct || "" },
-    { enabled: !!selectedProduct }
-  );
-
-  // Load images from database on mount
-  useEffect(() => {
-    if (allImages) {
-      const groupedImages = allImages.reduce((acc, img) => {
-        const product = products.find(p => p.name === img.productName);
-        if (product) {
-          const productIndex = products.findIndex(p => p.name === img.productName);
-          if (productIndex !== -1) {
-            acc[productIndex] = [...(acc[productIndex] || []), img];
-          }
-        }
-        return acc;
-      }, {} as Record<number, any[]>);
-
-      setProducts(products.map((p, idx) => ({
-        ...p,
-        images: groupedImages[idx] || []
-      })));
-    }
-  }, [allImages]);
 
   // Compress image to reduce file size
   const compressImage = (dataUrl: string, quality: number = 0.6): Promise<string> => {
@@ -134,74 +68,36 @@ export default function Catalog() {
     });
   };
 
-  const handleImageUpload = async (productId: string, files: FileList) => {
-    const product = products.find(p => p.id === productId);
-    if (!product) return;
-
-    setUploadingProduct(productId);
-
-    Array.from(files).forEach(async (file) => {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        if (e.target?.result) {
-          let imageUrl = e.target.result as string;
-          
-          // Compress image to reduce size
-          imageUrl = await compressImage(imageUrl, 0.5);
-          
-          try {
-            // Save to database
-            await addImageMutation.mutateAsync({
-              productName: product.name,
-              imageUrl: imageUrl
-            });
-
-            // Update local state
-            setProducts(products.map(p => 
-              p.id === productId 
-                ? { ...p, images: [...p.images, { imageUrl, productName: product.name }] }
-                : p
-            ));
-          } catch (error) {
-            console.error('Erro ao salvar imagem:', error);
-            // Try with more compression
-            imageUrl = await compressImage(imageUrl, 0.3);
-            try {
-              await addImageMutation.mutateAsync({
-                productName: product.name,
-                imageUrl: imageUrl
-              });
-              setProducts(products.map(p => 
-                p.id === productId 
-                  ? { ...p, images: [...p.images, { imageUrl, productName: product.name }] }
-                  : p
-              ));
-            } catch (err) {
-              console.error('Erro mesmo com compressão extra:', err);
-              alert('Erro ao salvar imagem. Tente com uma imagem menor.');
-            }
-          }
+  const handleImageUpload = async (productId: number, files: FileList) => {
+    setUploadingProduct(String(productId));
+    for (const file of Array.from(files)) {
+      const dataUrl: string = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target?.result as string);
+        reader.readAsDataURL(file);
+      });
+      let compressed = await compressImage(dataUrl, 0.5);
+      try {
+        await addImageMutation.mutateAsync({ productId, dataUrl: compressed });
+      } catch {
+        compressed = await compressImage(dataUrl, 0.3);
+        try {
+          await addImageMutation.mutateAsync({ productId, dataUrl: compressed });
+        } catch {
+          alert("Erro ao salvar imagem. Verifique o token de edição e tente uma imagem menor.");
         }
-      };
-      reader.readAsDataURL(file);
-    });
-
+      }
+    }
+    await utils.products.list.invalidate();
     setUploadingProduct(null);
   };
 
-  const removeImage = async (productId: string, imageId: number) => {
-    // Delete from database
+  const removeImage = async (_productId: number, imageId: number) => {
     await deleteImageMutation.mutateAsync({ imageId });
-
-    // Update local state
-    setProducts(products.map(p =>
-      p.id === productId
-        ? { ...p, images: p.images.filter((img) => img.id !== imageId) }
-        : p
-    ));
+    await utils.products.list.invalidate();
   };
 
-  const handleAddPhotosClick = (productId: string) => {
+  const handleAddPhotosClick = (productId: number) => {
     const input = document.createElement('input');
     input.type = 'file';
     input.multiple = true;
@@ -215,7 +111,7 @@ export default function Catalog() {
     input.click();
   };
 
-  const openGallery = (productId: string) => {
+  const openGallery = (productId: number) => {
     const product = products.find(p => p.id === productId);
     if (product && product.images.length > 0) {
       setSelectedProduct(productId);
@@ -288,12 +184,23 @@ export default function Catalog() {
       {/* Catalog Header */}
       <section className="py-20 bg-background border-b border-border">
         <div className="container">
-          <Link href="/">
-            <div className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors duration-300 mb-8 cursor-pointer">
-              <ArrowLeft className="w-4 h-4" />
-              Voltar
-            </div>
-          </Link>
+          <div className="flex items-center justify-between mb-8">
+            <Link href="/">
+              <div className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors duration-300 cursor-pointer">
+                <ArrowLeft className="w-4 h-4" />
+                Voltar
+              </div>
+            </Link>
+            {editMode ? (
+              <button onClick={exitEditMode} className="text-xs underline opacity-60">
+                Sair do modo edição
+              </button>
+            ) : (
+              <button onClick={enableEditMode} className="text-xs underline opacity-60">
+                Editar
+              </button>
+            )}
+          </div>
           <h1 className="text-6xl md:text-7xl heading-display text-foreground mb-6">
             Portfólio de Produtos
           </h1>
@@ -323,34 +230,36 @@ export default function Catalog() {
                   {product.images.length > 0 ? (
                     <>
                       {/* Main Image */}
-                      <img 
-                        src={product.images[0].imageUrl} 
+                      <img
+                        src={product.images[0].url}
                         alt={`${product.name} principal`}
                         className="w-full h-full object-cover group-hover/image-area:opacity-80 transition-opacity duration-300"
                       />
-                      
+
                       {/* Image Count Badge */}
                       <div className="absolute top-4 right-4 bg-foreground/90 text-background px-3 py-1 rounded-full text-xs font-semibold">
                         {product.images.length} foto{product.images.length !== 1 ? 's' : ''}
                       </div>
-                      
+
                       {/* Overlay */}
                       <div className="absolute inset-0 bg-black/0 group-hover/image-area:bg-black/30 transition-all duration-300 flex items-center justify-center">
                         <p className="text-white text-sm font-semibold opacity-0 group-hover/image-area:opacity-100 transition-opacity duration-300">
                           Ver galeria ({product.images.length})
                         </p>
                       </div>
-                      
+
                       {/* Remove Button */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeImage(product.id, product.images[0].id);
-                        }}
-                        className="absolute top-4 left-4 bg-red-500/90 hover:bg-red-600 text-white p-2 rounded opacity-0 group-hover/image-area:opacity-100 transition-opacity duration-300"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
+                      {editMode && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeImage(product.id, product.images[0].id);
+                          }}
+                          className="absolute top-4 left-4 bg-red-500/90 hover:bg-red-600 text-white p-2 rounded opacity-0 group-hover/image-area:opacity-100 transition-opacity duration-300"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
                     </>
                   ) : (
                     <div className="text-center">
@@ -370,13 +279,15 @@ export default function Catalog() {
                   </p>
 
                   {/* Add Photos Button */}
-                  <Button
-                    onClick={() => handleAddPhotosClick(product.id)}
-                    disabled={uploadingProduct === product.id}
-                    className="w-full bg-foreground text-background hover:bg-secondary text-sm px-4 py-2 rounded heading-secondary transition-all duration-300"
-                  >
-                    {uploadingProduct === product.id ? 'Enviando...' : product.images.length > 0 ? 'Adicionar Mais' : 'Adicionar Fotos'}
-                  </Button>
+                  {editMode && (
+                    <Button
+                      onClick={() => handleAddPhotosClick(product.id)}
+                      disabled={uploadingProduct === String(product.id)}
+                      className="w-full bg-foreground text-background hover:bg-secondary text-sm px-4 py-2 rounded heading-secondary transition-all duration-300"
+                    >
+                      {uploadingProduct === String(product.id) ? 'Enviando...' : product.images.length > 0 ? 'Adicionar Mais' : 'Adicionar Fotos'}
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}
@@ -398,7 +309,7 @@ export default function Catalog() {
           {/* Main Image */}
           <div className="relative w-full max-w-4xl mb-8">
             <img
-              src={currentProduct.images[currentImageIndex].imageUrl}
+              src={currentProduct.images[currentImageIndex].url}
               alt={`${currentProduct.name} ${currentImageIndex + 1}`}
               className="w-full h-auto max-h-96 object-contain"
             />
@@ -441,7 +352,7 @@ export default function Catalog() {
                   }`}
                 >
                   <img
-                    src={img.imageUrl}
+                    src={img.url}
                     alt={`Thumbnail ${idx + 1}`}
                     className="w-full h-full object-cover rounded"
                   />

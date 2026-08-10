@@ -1,12 +1,13 @@
 import express, { type Express } from "express";
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { type Server } from "http";
 import { createServer as createViteServer } from "vite";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const ROOT = path.resolve(__dirname, "..");
+// Anchored to process.cwd() — see server/db/client.ts for why this must not
+// be derived from __dirname (breaks once the server is bundled to dist/).
+// Shared convention across client.ts, lib/images.ts, and this module.
+const ROOT = process.cwd();
 
 /** Development: mount Vite as middleware so the client is served with HMR. */
 export async function setupVite(app: Express, server: Server) {
