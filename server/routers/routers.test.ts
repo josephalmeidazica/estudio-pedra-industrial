@@ -22,7 +22,7 @@ function freshDb(): DB {
   openDbs.push(db);
   return db;
 }
-beforeEach(() => { process.env.ADMIN_API_TOKEN = "test-token"; process.env.UPLOADS_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "eps-rtup-")); });
+beforeEach(() => { process.env.ADMIN_PASSWORD = "test-token"; process.env.UPLOADS_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "eps-rtup-")); });
 afterEach(() => {
   // Close the underlying better-sqlite3 handle first — on Windows, rmSync
   // can't remove a directory whose db/wal/shm files are still open.

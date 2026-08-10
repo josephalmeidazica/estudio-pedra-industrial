@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 
 export function isValidAdminToken(authHeader: string | undefined): boolean {
-  const expected = process.env.ADMIN_API_TOKEN ?? "";
+  const expected = process.env.ADMIN_PASSWORD ?? "";
   if (!expected) return false; // fail closed
   if (!authHeader?.startsWith("Bearer ")) return false;
   const provided = authHeader.slice("Bearer ".length);

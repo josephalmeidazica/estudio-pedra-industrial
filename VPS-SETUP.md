@@ -116,9 +116,9 @@ unlock the catalog's "Editar" mode for uploading/removing product photos),
 tells the app to run in production mode, and sets the port.
 
 ```bash
-printf 'ADMIN_API_TOKEN=%s\nNODE_ENV=production\nPORT=3000\n' \
+printf 'ADMIN_PASSWORD=%s\nNODE_ENV=production\nPORT=3000\n' \
   "$(node -e "console.log(require('crypto').randomBytes(24).toString('hex'))")" > .env
-cat .env    # copy the ADMIN_API_TOKEN somewhere safe
+cat .env    # copy the ADMIN_PASSWORD somewhere safe
 ```
 
 Notes:
@@ -165,7 +165,7 @@ Now open in your browser:
 http://YOUR_VPS_IP:3000
 ```
 Go to **`/catalogo`** to try the cart. Click **Editar** and paste your
-`ADMIN_API_TOKEN` to manage photos.
+`ADMIN_PASSWORD` to manage photos.
 
 > This exposes the Node app directly — fine for a test. For a real, public site
 > use a domain + HTTPS (7B), which also lets you close port 3000.
@@ -276,7 +276,7 @@ pm2 start eps       # start again
   in front (Step 7B).
 - Prefer **SSH keys** over passwords; consider disabling root password login and
   using a non-root sudo user once comfortable.
-- **Never commit `.env`** or share the `ADMIN_API_TOKEN` — it gates all writes.
+- **Never commit `.env`** or share the `ADMIN_PASSWORD` — it gates all writes.
 - Keep **backups off the box** (Step 8).
 - Run `apt update && apt upgrade -y` periodically to get security patches.
 
