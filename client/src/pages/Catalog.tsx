@@ -9,6 +9,9 @@ import { ArrowLeft, Plus, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "wouter";
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { CartProvider } from "@/components/cart/CartContext";
+import { CartWidget } from "@/components/cart/CartWidget";
+import { AddToCartButton } from "@/components/cart/AddToCartButton";
 
 export default function Catalog() {
   const utils = trpc.useUtils();
@@ -145,6 +148,7 @@ export default function Catalog() {
   const currentProduct = selectedProduct ? products.find(p => p.id === selectedProduct) : null;
 
   return (
+  <CartProvider>
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border bg-background sticky top-0 z-50">
@@ -191,15 +195,18 @@ export default function Catalog() {
                 Voltar
               </div>
             </Link>
-            {editMode ? (
-              <button onClick={exitEditMode} className="text-xs underline opacity-60">
-                Sair do modo edição
-              </button>
-            ) : (
-              <button onClick={enableEditMode} className="text-xs underline opacity-60">
-                Editar
-              </button>
-            )}
+            <div className="flex items-center gap-4">
+              <CartWidget />
+              {editMode ? (
+                <button onClick={exitEditMode} className="text-xs underline opacity-60">
+                  Sair do modo edição
+                </button>
+              ) : (
+                <button onClick={enableEditMode} className="text-xs underline opacity-60">
+                  Editar
+                </button>
+              )}
+            </div>
           </div>
           <h1 className="text-6xl md:text-7xl heading-display text-foreground mb-6">
             Portfólio de Produtos
@@ -278,12 +285,15 @@ export default function Catalog() {
                     {product.description}
                   </p>
 
+                  {/* Add to Cart Button */}
+                  <AddToCartButton name={product.name} />
+
                   {/* Add Photos Button */}
                   {editMode && (
                     <Button
                       onClick={() => handleAddPhotosClick(product.id)}
                       disabled={uploadingProduct === String(product.id)}
-                      className="w-full bg-foreground text-background hover:bg-secondary text-sm px-4 py-2 rounded heading-secondary transition-all duration-300"
+                      className="w-full mt-3 bg-foreground text-background hover:bg-secondary text-sm px-4 py-2 rounded heading-secondary transition-all duration-300"
                     >
                       {uploadingProduct === String(product.id) ? 'Enviando...' : product.images.length > 0 ? 'Adicionar Mais' : 'Adicionar Fotos'}
                     </Button>
@@ -363,5 +373,6 @@ export default function Catalog() {
         </div>
       )}
     </div>
+  </CartProvider>
   );
 }
