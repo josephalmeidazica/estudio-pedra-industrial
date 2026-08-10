@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -37,8 +38,10 @@ export function ProductDialog({ open, onOpenChange, product }: Props) {
   const utils = trpc.useUtils();
   const create = trpc.products.create.useMutation();
   const update = trpc.products.update.useMutation();
+  const del = trpc.products.delete.useMutation();
   const [form, setForm] = useState(empty);
   const [currentId, setCurrentId] = useState<number | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   useEffect(() => {
     if (product) {
@@ -58,6 +61,7 @@ export function ProductDialog({ open, onOpenChange, product }: Props) {
       setForm(empty);
       setCurrentId(null);
     }
+    setConfirmingDelete(false);
   }, [product, open]);
 
   const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
@@ -99,6 +103,18 @@ export function ProductDialog({ open, onOpenChange, product }: Props) {
       await refreshLists();
     } catch {
       alert("Erro ao salvar o produto. Verifique os campos e tente novamente.");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (currentId == null) return;
+    try {
+      await del.mutateAsync({ id: currentId });
+      await refreshLists();
+      setConfirmingDelete(false);
+      onOpenChange(false);
+    } catch {
+      alert("Erro ao excluir o produto.");
     }
   };
 
@@ -160,11 +176,37 @@ export function ProductDialog({ open, onOpenChange, product }: Props) {
           )}
         </div>
 
-        <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>Fechar</Button>
-          <Button onClick={save} disabled={!form.name.trim() || create.isPending || update.isPending}>
-            {currentId == null ? "Criar" : "Salvar"}
-          </Button>
+        <DialogFooter className="sm:justify-between">
+          <div>
+            {currentId != null &&
+              (confirmingDelete ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Excluir produto e imagens?</span>
+                  <Button variant="destructive" size="sm" disabled={del.isPending} onClick={handleDelete}>
+                    Confirmar
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => setConfirmingDelete(false)}>
+                    Cancelar
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive"
+                  onClick={() => setConfirmingDelete(true)}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Excluir produto
+                </Button>
+              ))}
+          </div>
+          <div className="flex gap-2">
+            <Button variant="ghost" onClick={() => onOpenChange(false)}>Fechar</Button>
+            <Button onClick={save} disabled={!form.name.trim() || create.isPending || update.isPending}>
+              {currentId == null ? "Criar" : "Salvar"}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
