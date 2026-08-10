@@ -52,16 +52,18 @@ npm test        # run the test suite
 
 ### Auth token
 
-Write operations (create/update/delete/reorder for products and images) require a
-bearer token; reads are public and need no auth.
+Only two endpoints are public: `products.list` and `products.getBySlug` (used by the
+catalog page). Everything else — all mutations (create/update/delete/reorder for
+products and images) plus the admin read `products.listAll` — requires a bearer token.
 
 1. Copy `.env.example` to `.env` (if you haven't already).
 2. Generate a token and set it as `ADMIN_API_TOKEN` in `.env`:
    ```bash
    node -e "console.log(require('crypto').randomBytes(24).toString('hex'))"
    ```
-3. Requests that mutate data must send `Authorization: Bearer <token>`. Requests
-   without a valid token are rejected (fail-closed) — reads work regardless.
+3. Every request other than `products.list` / `products.getBySlug` must send
+   `Authorization: Bearer <token>`. Requests without a valid token are rejected
+   (fail-closed).
 
 `.env` is git-ignored; never commit a real token value.
 
