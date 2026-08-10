@@ -4,13 +4,14 @@ import { createServer } from "http";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { createContext } from "./context";
 import { db } from "./db/client";
-import { seedIfEmpty } from "./db/seed";
+import { ensureProductImages, seedIfEmpty } from "./db/seed";
 import { UPLOADS_DIR } from "./lib/images";
 import { appRouter } from "./routers";
 import { serveStatic, setupVite } from "./vite";
 
 async function startServer() {
   await seedIfEmpty(db);
+  await ensureProductImages(db);
 
   const app = express();
   const server = createServer(app);

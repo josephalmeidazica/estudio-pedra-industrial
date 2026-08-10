@@ -5,7 +5,7 @@
 */
 
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Plus, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, Plus, X, ChevronLeft, ChevronRight, Tag } from "lucide-react";
 import { Link } from "wouter";
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
@@ -240,6 +240,7 @@ export default function Catalog() {
                       <img
                         src={product.images[0].url}
                         alt={`${product.name} principal`}
+                        loading="lazy"
                         className="w-full h-full object-cover group-hover/image-area:opacity-80 transition-opacity duration-300"
                       />
 
@@ -281,9 +282,16 @@ export default function Catalog() {
                   <h3 className="heading-secondary text-xl mb-2 text-foreground">
                     {product.name}
                   </h3>
-                  <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
+                  <p className={`text-sm text-muted-foreground leading-relaxed ${product.category ? "mb-2" : "mb-4"}`}>
                     {product.description}
                   </p>
+
+                  {product.category ? (
+                    <span className="mt-1 mb-4 inline-flex items-center gap-1 text-xs text-muted-foreground">
+                      <Tag className="h-3 w-3" />
+                      {product.category}
+                    </span>
+                  ) : null}
 
                   {/* Add to Cart Button */}
                   <AddToCartButton name={product.name} />
