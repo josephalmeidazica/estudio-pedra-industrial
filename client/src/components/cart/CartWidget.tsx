@@ -12,6 +12,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { thumbUrl } from "@/lib/imageSrcSet";
 import { trpc } from "@/lib/trpc";
 import { useCart } from "./CartContext";
 import { buildWhatsAppUrl } from "./whatsapp";
@@ -25,7 +26,7 @@ export function CartWidget() {
 
   // Join cart lines (by name) to product cover image + category for display only.
   const infoByName = new Map(
-    products.map((p) => [p.name, { url: p.images[0]?.url, category: p.category }])
+    products.map((p) => [p.name, { url: p.images[0] ? thumbUrl(p.images[0]) : undefined, category: p.category }])
   );
 
   const checkout = () => {

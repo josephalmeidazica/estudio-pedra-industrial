@@ -1,4 +1,3 @@
-import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -6,41 +5,55 @@ import path from "node:path";
 // be derived from __dirname (breaks once the server is bundled to dist/).
 const PROJECT_ROOT = process.cwd();
 
-function uploadsDir(): string {
+export function uploadsDir(): string {
   return process.env.UPLOADS_DIR ?? path.join(PROJECT_ROOT, ".data", "uploads");
 }
 export const UPLOADS_DIR = uploadsDir();
 
-const EXT_BY_MIME: Record<string, string> = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-  "image/gif": "gif",
-};
+export const UNSUPPORTED_IMAGE_MESSAGE =
+  "Formato de imagem não suportado. Envie JPEG, PNG, WebP ou GIF.";
 
-export function decodeDataUrl(dataUrl: string): { buffer: Buffer; ext: string } {
-  const match = /^data:([^;]+);base64,(.+)$/s.exec(dataUrl);
+/**
+ * Split a base64 data URL into bytes + declared MIME. Accepts any `image/*`
+ * plus `application/octet-stream` (what browsers declare for files they do
+ * not recognise, e.g. HEIC on Chrome); the pipeline decides what the bytes
+ * really are.
+ */
+export function decodeDataUrl(dataUrl: string): { buffer: Buffer; mime: string } {
+  const match = /^data:([^;,]*);base64,(.+)$/s.exec(dataUrl);
   if (!match) throw new Error("Invalid data URL");
-  const [, mime, b64] = match;
-  const ext = EXT_BY_MIME[mime];
-  if (!ext) throw new Error(`Unsupported image type: ${mime}`);
-  return { buffer: Buffer.from(b64, "base64"), ext };
+  const mime = match[1].toLowerCase();
+  const accepted = mime.startsWith("image/") || mime === "application/octet-stream" || mime === "";
+  if (!accepted) throw new Error(UNSUPPORTED_IMAGE_MESSAGE);
+  return { buffer: Buffer.from(match[2], "base64"), mime: mime || "application/octet-stream" };
 }
 
-export function saveImageBuffer(buffer: Buffer, ext: string): string {
-  const dir = uploadsDir();
-  fs.mkdirSync(dir, { recursive: true });
-  const name = `${crypto.randomUUID()}.${ext}`;
-  fs.writeFileSync(path.join(dir, name), buffer);
-  return `/uploads/${name}`;
-}
+const VARIANT_NAME = /^([0-9a-f-]{36})-\d+\.webp$/;
 
+/**
+ * Remove an uploaded file by its public URL. For a variant file
+ * (`<uuid>-<width>.webp`) every sibling variant of the same uuid is removed
+ * too. URLs outside `/uploads/` (e.g. `/products/...`) are ignored.
+ */
 export function deleteImageByUrl(url: string): void {
   const name = url.replace(/^\/uploads\//, "");
   if (!name || name.includes("..") || name.includes("/") || name.includes("\\")) return;
+  const dir = uploadsDir();
+  const rm = (file: string) => {
+    try {
+      fs.rmSync(path.join(dir, file), { force: true });
+    } catch {
+      /* file already gone — ignore */
+    }
+  };
+  rm(name);
+  const m = VARIANT_NAME.exec(name);
+  if (!m) return;
+  let entries: string[] = [];
   try {
-    fs.rmSync(path.join(uploadsDir(), name), { force: true });
+    entries = fs.readdirSync(dir);
   } catch {
-    /* file already gone — ignore */
+    return;
   }
+  for (const f of entries) if (f.startsWith(`${m[1]}-`) && f.endsWith(".webp")) rm(f);
 }

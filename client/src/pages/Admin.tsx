@@ -14,6 +14,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import type { AdminProduct } from "@/lib/types";
+import { thumbUrl } from "@/lib/imageSrcSet";
 import { trpc } from "@/lib/trpc";
 import { ProductDialog } from "@/components/admin/ProductDialog";
 
@@ -114,7 +115,7 @@ export default function Admin() {
           <div key={p.id} className="flex items-center gap-3 p-3">
             <div className="h-12 w-12 shrink-0 overflow-hidden rounded border bg-muted">
               {p.images[0]?.url ? (
-                <img src={p.images[0].url} alt="" className="h-full w-full object-cover" />
+                <img src={thumbUrl(p.images[0])} alt="" className="h-full w-full object-cover" />
               ) : null}
             </div>
             <div className="min-w-0 flex-1">

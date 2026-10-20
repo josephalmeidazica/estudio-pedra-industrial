@@ -12,7 +12,14 @@ export async function listForProduct(db: DB, productId: number): Promise<Product
 
 export async function addImage(
   db: DB,
-  input: { productId: number; url: string; alt?: string }
+  input: {
+    productId: number;
+    url: string;
+    alt?: string;
+    width?: number;
+    height?: number;
+    variants?: Record<string, string>;
+  }
 ): Promise<ProductImage> {
   const existing = await listForProduct(db, input.productId);
   const nextOrder =
@@ -24,9 +31,28 @@ export async function addImage(
       url: input.url,
       alt: input.alt ?? "",
       sortOrder: nextOrder,
+      width: input.width ?? 0,
+      height: input.height ?? 0,
+      variants: input.variants ?? {},
     })
     .returning();
   return row;
+}
+
+/** Rows stored before the variant pipeline: a single file, no intrinsic size. */
+export async function listLegacy(db: DB): Promise<ProductImage[]> {
+  return db.select().from(productImages).where(eq(productImages.width, 0));
+}
+
+export async function setProcessed(
+  db: DB,
+  imageId: number,
+  p: { url: string; width: number; height: number; variants: Record<string, string> }
+): Promise<void> {
+  await db
+    .update(productImages)
+    .set({ url: p.url, width: p.width, height: p.height, variants: p.variants })
+    .where(eq(productImages.id, imageId));
 }
 
 export async function deleteImage(db: DB, imageId: number): Promise<string | null> {

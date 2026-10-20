@@ -2,20 +2,23 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { adminProcedure, router } from "../trpc";
 import * as repo from "../db/images.repo";
-import { decodeDataUrl, deleteImageByUrl, saveImageBuffer } from "../lib/images";
+import { isUploadRejection, processUpload } from "../lib/imagePipeline";
+import { deleteImageByUrl } from "../lib/images";
 
 export const imagesRouter = router({
   add: adminProcedure
     .input(z.object({ productId: z.number().int(), dataUrl: z.string(), alt: z.string().optional() }))
-    .mutation(({ ctx, input }) => {
-      let url: string;
+    .mutation(async ({ ctx, input }) => {
+      let processed;
       try {
-        const { buffer, ext } = decodeDataUrl(input.dataUrl);
-        url = saveImageBuffer(buffer, ext);
+        processed = await processUpload(input.dataUrl);
       } catch (e) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: (e as Error).message });
+        // The owner's file is the problem -> 400 with the Portuguese guidance.
+        // Anything else (disk full, permissions) is ours -> let tRPC report a 500.
+        if (isUploadRejection(e)) throw new TRPCError({ code: "BAD_REQUEST", message: e.message });
+        throw e;
       }
-      return repo.addImage(ctx.db, { productId: input.productId, url, alt: input.alt });
+      return repo.addImage(ctx.db, { productId: input.productId, alt: input.alt, ...processed });
     }),
   delete: adminProcedure
     .input(z.object({ imageId: z.number().int() }))

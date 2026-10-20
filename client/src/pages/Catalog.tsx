@@ -8,9 +8,11 @@ import { ArrowLeft, Plus, X, ChevronLeft, ChevronRight, Tag } from "lucide-react
 import { Link } from "wouter";
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import { CartProvider } from "@/components/cart/CartContext";
-import { CartWidget } from "@/components/cart/CartWidget";
+import { Layout } from "@/components/layout/Layout";
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
+import { QuoteButton } from "@/components/catalog/QuoteButton";
+import { CARD_SIZES, ResponsiveImage } from "@/components/ResponsiveImage";
+import { hasDimensions, thumbUrl } from "@/lib/imageSrcSet";
 
 export default function Catalog() {
   const { data: products = [] } = trpc.products.list.useQuery();
@@ -50,60 +52,24 @@ export default function Catalog() {
   };
 
   const currentProduct = selectedProduct ? products.find(p => p.id === selectedProduct) : null;
+  const currentImage = currentProduct?.images[currentImageIndex];
+  const knownSize = currentImage ? hasDimensions(currentImage) : false;
 
   return (
-  <CartProvider>
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-background sticky top-0 z-50">
-        <div className="container">
-          <nav className="flex items-center justify-between py-6">
-            <Link href="/">
-              <div className="flex items-center gap-3 hover:opacity-80 transition-opacity duration-300 cursor-pointer">
-                <img 
-                  src="/logo.png" 
-                  alt="Estúdio Pedra Industrial Logo"
-                  className="w-12 h-12 object-contain"
-                />
-                <div>
-                  <p className="heading-secondary text-sm font-bold text-foreground">Estúdio Pedra</p>
-                  <p className="text-xs text-accent-mono text-muted-foreground">INDUSTRIAL</p>
-                </div>
-              </div>
-            </Link>
-            <div className="hidden md:flex items-center gap-12">
-              <a href="/" className="heading-secondary text-sm text-foreground hover:text-secondary transition-colors duration-300">
-                Início
-              </a>
-              <a href="/#servicos" className="heading-secondary text-sm text-foreground hover:text-secondary transition-colors duration-300">
-                Serviços
-              </a>
-              <a href="/#sobre" className="heading-secondary text-sm text-foreground hover:text-secondary transition-colors duration-300">
-                Sobre
-              </a>
-              <a href="/#contato" className="heading-secondary text-sm text-foreground hover:text-secondary transition-colors duration-300">
-                Contato
-              </a>
-            </div>
-          </nav>
-        </div>
-      </header>
+  <Layout showCart>
 
       {/* Catalog Header */}
       <section className="py-20 bg-background border-b border-border">
         <div className="container">
-          <div className="flex items-center justify-between mb-8">
+          <div className="mb-8">
             <Link href="/">
               <div className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors duration-300 cursor-pointer">
                 <ArrowLeft className="w-4 h-4" />
                 Voltar
               </div>
             </Link>
-            <div className="flex items-center gap-4">
-              <CartWidget />
-            </div>
           </div>
-          <h1 className="text-6xl md:text-7xl heading-display text-foreground mb-6">
+          <h1 className="text-5xl sm:text-6xl md:text-7xl heading-display text-foreground mb-6">
             Portfólio de Produtos
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl">
@@ -132,8 +98,9 @@ export default function Catalog() {
                   {product.images.length > 0 ? (
                     <>
                       {/* Main Image */}
-                      <img
-                        src={product.images[0].url}
+                      <ResponsiveImage
+                        image={product.images[0]}
+                        sizes={CARD_SIZES}
                         alt={`${product.name} principal`}
                         loading="lazy"
                         className="w-full h-full object-cover group-hover/image-area:opacity-80 transition-opacity duration-300"
@@ -175,8 +142,11 @@ export default function Catalog() {
                     </span>
                   ) : null}
 
-                  {/* Add to Cart Button */}
-                  <AddToCartButton name={product.name} />
+                  {/* Actions */}
+                  <div className="flex flex-col gap-2">
+                    <QuoteButton productName={product.name} />
+                    <AddToCartButton name={product.name} />
+                  </div>
                 </div>
               </div>
             ))}
@@ -185,7 +155,7 @@ export default function Catalog() {
       </section>
 
       {/* Gallery Modal */}
-      {selectedProduct && currentProduct && currentProduct.images.length > 0 && (
+      {selectedProduct && currentProduct && currentImage && (
         <div className="fixed inset-0 bg-black/90 z-50 flex flex-col items-center justify-center p-4">
           {/* Close Button */}
           <button
@@ -197,11 +167,18 @@ export default function Catalog() {
 
           {/* Main Image */}
           <div className="relative w-full max-w-4xl mb-8">
-            <img
-              src={currentProduct.images[currentImageIndex].url}
-              alt={`${currentProduct.name} ${currentImageIndex + 1}`}
-              className="w-full h-auto max-h-96 object-contain"
-            />
+            <div
+              className={knownSize ? "mx-auto max-h-[70vh] w-full" : undefined}
+              style={knownSize ? { aspectRatio: `${currentImage.width} / ${currentImage.height}` } : undefined}
+            >
+              <img
+                src={currentImage.url}
+                alt={`${currentProduct.name} ${currentImageIndex + 1}`}
+                width={knownSize ? currentImage.width : undefined}
+                height={knownSize ? currentImage.height : undefined}
+                className={knownSize ? "h-full w-full object-contain" : "w-full h-auto max-h-96 object-contain"}
+              />
+            </div>
             
             {/* Navigation Arrows */}
             {currentProduct.images.length > 1 && (
@@ -241,7 +218,7 @@ export default function Catalog() {
                   }`}
                 >
                   <img
-                    src={img.url}
+                    src={thumbUrl(img)}
                     alt={`Thumbnail ${idx + 1}`}
                     className="w-full h-full object-cover rounded"
                   />
@@ -251,7 +228,6 @@ export default function Catalog() {
           )}
         </div>
       )}
-    </div>
-  </CartProvider>
+  </Layout>
   );
 }

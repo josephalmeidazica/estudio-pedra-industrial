@@ -1,33 +1,21 @@
 import "dotenv/config";
-import express from "express";
 import { createServer } from "http";
-import { createExpressMiddleware } from "@trpc/server/adapters/express";
-import { createContext } from "./context";
+import { createApp } from "./app";
 import { db } from "./db/client";
 import { ensureProductImages, seedIfEmpty } from "./db/seed";
-import { UPLOADS_DIR } from "./lib/images";
-import { appRouter } from "./routers";
+import { assertProductionConfig } from "./lib/config";
 import { serveStatic, setupVite } from "./vite";
 
 async function startServer() {
+  assertProductionConfig(process.env);
+
   await seedIfEmpty(db);
   await ensureProductImages(db);
 
-  const app = express();
+  const app = createApp(db);
   const server = createServer(app);
 
-  app.use(express.json({ limit: "50mb" }));
-  app.use(express.urlencoded({ limit: "50mb", extended: true }));
-
-  // Uploaded product images (must be before the Vite/static catch-all).
-  app.use("/uploads", express.static(UPLOADS_DIR));
-
-  // tRPC API
-  app.use(
-    "/api/trpc",
-    createExpressMiddleware({ router: appRouter, createContext })
-  );
-
+  // The client is a catch-all, so it mounts after /uploads, /healthz and /api.
   if (process.env.NODE_ENV === "production") {
     serveStatic(app);
   } else {
@@ -44,4 +32,7 @@ async function startServer() {
   });
 }
 
-startServer().catch(console.error);
+startServer().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

@@ -1,8 +1,10 @@
 import { useRef, useState } from "react";
+import { TRPCClientError } from "@trpc/client";
 import { ChevronLeft, ChevronRight, Star, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { compressImage } from "@/lib/imageCompress";
 import type { AdminImage } from "@/lib/types";
+import { thumbUrl } from "@/lib/imageSrcSet";
 import { trpc } from "@/lib/trpc";
 
 export function ImageManager({ productId, images }: { productId: number; images: AdminImage[] }) {
@@ -24,16 +26,11 @@ export function ImageManager({ productId, images }: { productId: number; images:
         r.onload = (e) => res(e.target?.result as string);
         r.readAsDataURL(file);
       });
-      let compressed = await compressImage(dataUrl, 0.6);
       try {
-        await addImage.mutateAsync({ productId, dataUrl: compressed });
-      } catch {
-        compressed = await compressImage(dataUrl, 0.3);
-        try {
-          await addImage.mutateAsync({ productId, dataUrl: compressed });
-        } catch {
-          alert("Erro ao enviar imagem. Tente uma imagem menor.");
-        }
+        await addImage.mutateAsync({ productId, dataUrl: await compressImage(dataUrl) });
+      } catch (e) {
+        // Server messages are specific (HEIC guidance, size cap, unsupported format).
+        alert(e instanceof TRPCClientError ? e.message : "Erro ao enviar imagem. Tente uma imagem menor.");
       }
     }
     await refresh();
@@ -74,7 +71,7 @@ export function ImageManager({ productId, images }: { productId: number; images:
         <div className="grid grid-cols-3 gap-2">
           {images.map((img, i) => (
             <div key={img.id} className="group relative overflow-hidden rounded-md border">
-              <img src={img.url} alt="" className="aspect-square w-full object-cover" />
+              <img src={thumbUrl(img)} alt="" className="aspect-square w-full object-cover" />
               {i === 0 && (
                 <span className="absolute left-1 top-1 rounded bg-background/80 px-1 text-[10px]">Capa</span>
               )}

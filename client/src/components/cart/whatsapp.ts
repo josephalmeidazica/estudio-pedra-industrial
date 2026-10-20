@@ -1,4 +1,4 @@
-import { WHATSAPP_NUMBER } from "@/config";
+import { whatsappUrl } from "@/lib/whatsapp";
 import { totalCount, type CartItem } from "./cartReducer";
 
 export function buildWhatsAppMessage(customerName: string, items: CartItem[]): string {
@@ -13,6 +13,5 @@ export function buildWhatsAppMessage(customerName: string, items: CartItem[]): s
 }
 
 export function buildWhatsAppUrl(customerName: string, items: CartItem[]): string {
-  const text = encodeURIComponent(buildWhatsAppMessage(customerName, items));
-  return `https://wa.me/${WHATSAPP_NUMBER}?text=${text}`;
+  return whatsappUrl(buildWhatsAppMessage(customerName, items));
 }

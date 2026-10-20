@@ -1,5 +1,8 @@
 import { eq } from "drizzle-orm";
+import fs from "node:fs";
+import path from "node:path";
 import type { DB } from "./client";
+import { processImage } from "../lib/imagePipeline";
 import { products, productImages } from "./schema";
 
 const SEED: { slug: string; name: string; description: string; category: string }[] = [
@@ -33,20 +36,21 @@ export async function seedIfEmpty(db: DB): Promise<void> {
   );
 }
 
-export const DEFAULT_PRODUCT_IMAGES: Record<string, string> = {
-  "estrutura-gaia": "/products/estrutura-gaia.jpg",
-  "estante-divisio": "/products/estante-divisio.jpg",
-  "luminaria-lua": "/products/luminaria-lua.jpg",
-  "luminaria-sol": "/products/luminaria-sol.jpg",
-  "mesa-cabeceira-loft": "/products/mesa-cabeceira-loft.jpg",
-  "mesa-office-l": "/products/mesa-office-l.jpg",
-  "mesa-urb": "/products/mesa-urb.jpg",
-  "penteadeira-glam": "/products/penteadeira-glam.jpg",
-  "projetos-personalizados": "/products/projetos-personalizados.jpg",
-};
+/** Default photo file (under client/public/products/) per seeded slug. */
+export const DEFAULT_PRODUCT_IMAGE_FILES: Record<string, string> = Object.fromEntries(
+  SEED.map((p) => [p.slug, `${p.slug}.jpg`])
+);
+
+// Anchored to process.cwd() — see server/db/client.ts.
+export function defaultImagePath(file: string): string {
+  return path.join(process.cwd(), "client", "public", "products", file);
+}
 
 /**
- * Attach a default image to any known product that currently has none.
+ * Attach a default image to any known product that currently has none. The
+ * default JPEG is run through the same variant pipeline as owner uploads so
+ * there is a single rendering path.
+ *
  * Idempotent: only acts when a product has zero images, so it never
  * duplicates and never overrides owner-added photos.
  *
@@ -55,7 +59,7 @@ export const DEFAULT_PRODUCT_IMAGES: Record<string, string> = {
  * re-added on the next boot. Acceptable for default illustrative images.
  */
 export async function ensureProductImages(db: DB): Promise<void> {
-  for (const [slug, url] of Object.entries(DEFAULT_PRODUCT_IMAGES)) {
+  for (const [slug, file] of Object.entries(DEFAULT_PRODUCT_IMAGE_FILES)) {
     const rows = await db
       .select({ id: products.id, name: products.name })
       .from(products)
@@ -71,11 +75,17 @@ export async function ensureProductImages(db: DB): Promise<void> {
       .limit(1);
     if (existing.length > 0) continue;
 
+    const source = defaultImagePath(file);
+    if (!fs.existsSync(source)) {
+      console.warn(`[seed] default image missing for ${slug}: ${source}`);
+      continue;
+    }
+    const processed = await processImage(fs.readFileSync(source));
     await db.insert(productImages).values({
       productId: product.id,
-      url,
       alt: product.name,
       sortOrder: 0,
+      ...processed,
     });
   }
 }

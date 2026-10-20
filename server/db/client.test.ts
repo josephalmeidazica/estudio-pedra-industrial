@@ -32,6 +32,9 @@ test("migrations create tables and CRUD works", async () => {
     .values({ productId: p.id, url: "/uploads/x.jpg" })
     .returning();
   expect(img.productId).toBe(p.id);
+  expect(img.width).toBe(0);
+  expect(img.height).toBe(0);
+  expect(img.variants).toEqual({});
 });
 
 test("deleting a product cascades to its images", async () => {
