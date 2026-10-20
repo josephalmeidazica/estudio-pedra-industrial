@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, Star, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { compressImage } from "@/lib/imageCompress";
 import type { AdminImage } from "@/lib/types";
+import { thumbUrl } from "@/lib/imageSrcSet";
 import { trpc } from "@/lib/trpc";
 
 export function ImageManager({ productId, images }: { productId: number; images: AdminImage[] }) {
@@ -74,7 +75,7 @@ export function ImageManager({ productId, images }: { productId: number; images:
         <div className="grid grid-cols-3 gap-2">
           {images.map((img, i) => (
             <div key={img.id} className="group relative overflow-hidden rounded-md border">
-              <img src={img.url} alt="" className="aspect-square w-full object-cover" />
+              <img src={thumbUrl(img)} alt="" className="aspect-square w-full object-cover" />
               {i === 0 && (
                 <span className="absolute left-1 top-1 rounded bg-background/80 px-1 text-[10px]">Capa</span>
               )}

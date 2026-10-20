@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import sharp from "sharp";
+import sharp, { type Metadata } from "sharp";
 import { UNSUPPORTED_IMAGE_MESSAGE, decodeDataUrl, uploadsDir } from "./images";
 
 export { UNSUPPORTED_IMAGE_MESSAGE };
@@ -60,7 +60,7 @@ export type ProcessedImage = {
  * Throws `UNSUPPORTED_IMAGE_MESSAGE` when sharp cannot decode the bytes.
  */
 export async function processImage(buffer: Buffer, dir: string = uploadsDir()): Promise<ProcessedImage> {
-  let meta: sharp.Metadata;
+  let meta: Metadata;
   try {
     meta = await sharp(buffer).metadata();
   } catch {
