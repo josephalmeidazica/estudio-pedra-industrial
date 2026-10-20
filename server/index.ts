@@ -4,6 +4,7 @@ import { createApp } from "./app";
 import { getDb } from "./db/client";
 import { ensureCustomProduct, ensureProductImages, seedIfEmpty } from "./db/seed";
 import { assertProductionConfig } from "./lib/config";
+import { schedulePurge } from "./lib/trashJob";
 import { createPageHandler } from "./page";
 import { devTemplate, prodTemplate, serveStatic, setupVite, type HtmlTransform } from "./vite";
 
@@ -14,6 +15,7 @@ async function startServer() {
   await seedIfEmpty(db);
   await ensureCustomProduct(db);
   await ensureProductImages(db);
+  schedulePurge(db);
 
   const app = createApp(db);
   const server = createServer(app);

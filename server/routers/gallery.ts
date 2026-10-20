@@ -2,8 +2,8 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { adminProcedure, publicProcedure, router } from "../trpc";
 import * as repo from "../db/gallery.repo";
+import { softDelete } from "../db/trash.repo";
 import { isUploadRejection, processUpload } from "../lib/imagePipeline";
-import { deleteImageByUrl } from "../lib/images";
 
 export const galleryRouter = router({
   list: publicProcedure.query(({ ctx }) => repo.listGallery(ctx.db)),
@@ -39,11 +39,11 @@ export const galleryRouter = router({
       if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Gallery image not found" });
       return row;
     }),
+  // Moves the photo to the Lixeira; the files stay until it is purged.
   delete: adminProcedure
     .input(z.object({ id: z.number().int() }))
     .mutation(async ({ ctx, input }) => {
-      const url = await repo.deleteGalleryImage(ctx.db, input.id);
-      if (url) deleteImageByUrl(url);
+      await softDelete(ctx.db, "gallery", input.id);
       return { success: true as const };
     }),
   reorder: adminProcedure
