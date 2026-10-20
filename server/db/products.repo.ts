@@ -8,9 +8,10 @@ import {
   type ProductWithImages,
 } from "./schema";
 import { makeUniqueSlug, slugify } from "../lib/slug";
+import { DRAFT_PRODUCT_NAME } from "../../shared/draft";
 
 /** Name given to a piece created by "Nova peça" before the owner types one. */
-export const DRAFT_NAME = "Nova peça";
+export const DRAFT_NAME = DRAFT_PRODUCT_NAME;
 
 /** Images of these products, excluding ones in the Lixeira. */
 async function attachImages(db: DB, rows: Product[]): Promise<ProductWithImages[]> {

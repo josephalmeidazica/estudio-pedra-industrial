@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { TRPCClientError } from "@trpc/client";
 import { ArrowDown, ArrowUp, LogOut, Pencil, Plus, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,8 +20,9 @@ import { thumbUrl } from "@/lib/imageSrcSet";
 import { trpc } from "@/lib/trpc";
 import { usePageTitle } from "@/lib/usePageTitle";
 import { titles } from "@shared/seo-text";
-import { ProductDialog } from "@/components/admin/ProductDialog";
+import { ProductEditor } from "@/components/admin/ProductEditor";
 import { AmbientesTab } from "@/components/admin/AmbientesTab";
+import { LixeiraTab } from "@/components/admin/LixeiraTab";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 /** Batch 1-3 kept the password in localStorage; the session cookie replaces it. */
@@ -47,9 +49,10 @@ export default function Admin() {
   const listAll = trpc.products.listAll.useQuery(undefined, { enabled: authenticated, retry: false });
   const reorder = trpc.products.reorder.useMutation();
   const del = trpc.products.delete.useMutation();
+  const restore = trpc.trash.restore.useMutation();
 
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editing, setEditing] = useState<AdminProduct | null>(null);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [toDelete, setToDelete] = useState<AdminProduct | null>(null);
 
   // A 401 on an admin query means the cookie expired or the password changed.
@@ -109,6 +112,11 @@ export default function Admin() {
 
   const products = listAll.data ?? [];
 
+  const refreshLists = async () => {
+    await utils.products.listAll.invalidate();
+    await utils.products.list.invalidate();
+  };
+
   const move = async (index: number, dir: -1 | 1) => {
     const ordered = products.map((p) => p.id);
     const j = index + dir;
@@ -118,71 +126,108 @@ export default function Admin() {
     await utils.products.listAll.invalidate();
   };
 
-  const openNew = () => { setEditing(null); setDialogOpen(true); };
-  const openEdit = (p: AdminProduct) => { setEditing(p); setDialogOpen(true); };
+  const openNew = () => {
+    setEditingId(null);
+    setEditorOpen(true);
+  };
+  const openEdit = (p: AdminProduct) => {
+    setEditingId(p.id);
+    setEditorOpen(true);
+  };
 
   const confirmDelete = async () => {
     if (!toDelete) return;
-    await del.mutateAsync({ id: toDelete.id });
+    const deletedId = toDelete.id;
+    await del.mutateAsync({ id: deletedId });
     setToDelete(null);
-    await utils.products.listAll.invalidate();
-    await utils.products.list.invalidate();
+    await refreshLists();
+    toast("Peça movida para a Lixeira", {
+      duration: 5000,
+      action: {
+        label: "Desfazer",
+        onClick: async () => {
+          await restore.mutateAsync({ kind: "product", id: deletedId });
+          await refreshLists();
+        },
+      },
+    });
   };
 
   return (
-    <div className="mx-auto max-w-4xl p-6">
-      <div className="mb-6 flex items-center justify-between">
+    <div className="mx-auto max-w-4xl p-4 sm:p-6">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-semibold">Administração</h1>
         <div className="flex gap-2">
-          <Button onClick={openNew}><Plus className="mr-2 h-4 w-4" />Novo produto</Button>
-          <Button variant="ghost" onClick={logout}><LogOut className="mr-2 h-4 w-4" />Sair</Button>
+          <Button onClick={openNew}>
+            <Plus className="mr-2 h-4 w-4" />
+            Nova peça
+          </Button>
+          <Button variant="ghost" onClick={logout}>
+            <LogOut className="mr-2 h-4 w-4" />
+            Sair
+          </Button>
         </div>
       </div>
 
-      <Tabs defaultValue="produtos">
+      <Tabs defaultValue="pecas">
         <TabsList className="mb-4">
-          <TabsTrigger value="produtos">Produtos</TabsTrigger>
+          <TabsTrigger value="pecas">Peças</TabsTrigger>
           <TabsTrigger value="ambientes">Ambientes</TabsTrigger>
+          <TabsTrigger value="lixeira">Lixeira</TabsTrigger>
         </TabsList>
-        <TabsContent value="produtos">
-      <div className="divide-y rounded-md border">
-        {products.map((p, i) => (
-          <div key={p.id} className="flex items-center gap-3 p-3">
-            <div className="h-12 w-12 shrink-0 overflow-hidden rounded border bg-muted">
-              {p.images[0]?.url ? (
-                <img src={thumbUrl(p.images[0])} alt="" className="h-full w-full object-cover" />
-              ) : null}
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <span className="truncate font-medium">{p.name}</span>
-                {!p.published && <Badge variant="secondary">Rascunho</Badge>}
-              </div>
-              <span className="text-xs text-muted-foreground">{p.category}</span>
-            </div>
-            <Button variant="ghost" size="icon" aria-label="Mover para cima" disabled={i === 0} onClick={() => move(i, -1)}><ArrowUp className="h-4 w-4" /></Button>
-            <Button variant="ghost" size="icon" aria-label="Mover para baixo" disabled={i === products.length - 1} onClick={() => move(i, 1)}><ArrowDown className="h-4 w-4" /></Button>
-            <Button variant="ghost" size="icon" aria-label="Editar" onClick={() => openEdit(p)}><Pencil className="h-4 w-4" /></Button>
-            <Button variant="ghost" size="icon" aria-label="Excluir" className="text-destructive" onClick={() => setToDelete(p)}><Trash2 className="h-4 w-4" /></Button>
-          </div>
-        ))}
-        {products.length === 0 && <p className="p-6 text-center text-muted-foreground">Nenhum produto.</p>}
-      </div>
 
+        <TabsContent value="pecas">
+          <div className="divide-y rounded-md border">
+            {products.map((p, i) => (
+              <div key={p.id} className="flex flex-wrap items-center gap-3 p-3">
+                <div className="h-14 w-14 shrink-0 overflow-hidden rounded border bg-muted">
+                  {p.images[0]?.url ? <img src={thumbUrl(p.images[0])} alt="" className="h-full w-full object-cover" /> : null}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="truncate font-medium">{p.name}</span>
+                    {!p.published && <Badge variant="secondary">Rascunho</Badge>}
+                    {p.isCustom && <Badge variant="outline">Personalizado</Badge>}
+                  </div>
+                  <span className="text-xs text-muted-foreground">{p.category}</span>
+                </div>
+                <div className="ml-auto flex gap-1">
+                  <Button variant="ghost" size="icon" aria-label="Mover para cima" disabled={i === 0} onClick={() => move(i, -1)}>
+                    <ArrowUp className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" aria-label="Mover para baixo" disabled={i === products.length - 1} onClick={() => move(i, 1)}>
+                    <ArrowDown className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" aria-label="Editar" onClick={() => openEdit(p)}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" aria-label="Excluir" className="text-destructive" onClick={() => setToDelete(p)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+            {products.length === 0 && <p className="p-6 text-center text-muted-foreground">Nenhuma peça ainda. Toque em "Nova peça".</p>}
+          </div>
         </TabsContent>
+
         <TabsContent value="ambientes">
           <AmbientesTab />
         </TabsContent>
+
+        <TabsContent value="lixeira">
+          <LixeiraTab />
+        </TabsContent>
       </Tabs>
 
-      <ProductDialog open={dialogOpen} onOpenChange={setDialogOpen} product={editing} />
+      <ProductEditor open={editorOpen} onOpenChange={setEditorOpen} productId={editingId} />
 
       <AlertDialog open={toDelete != null} onOpenChange={(o) => !o && setToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir produto?</AlertDialogTitle>
+            <AlertDialogTitle>Mover para a Lixeira?</AlertDialogTitle>
             <AlertDialogDescription>
-              "{toDelete?.name}" e suas imagens serão removidos. Esta ação não pode ser desfeita.
+              "{toDelete?.name}" sai do site agora. Você pode restaurar pela Lixeira por 30 dias.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
