@@ -197,7 +197,8 @@ challenge has to reach the VPS directly.
 
 **6.1 DNS (proxy off):** in Cloudflare → DNS → Records → **Add record**:
 type `A`, name `@`, IPv4 `YOUR_VPS_IP`, **Proxy status: DNS only (grey cloud)**.
-Add a second `A` record with name `www` the same way if you want `www.` to work.
+Add a second `A` record with name `www` the same way if you want `www.<domain>`
+to work; the Caddyfile redirects it to the main domain.
 
 **6.2 Install & configure Caddy:**
 ```bash
@@ -208,6 +209,7 @@ apt update && apt install -y caddy
 
 cd /opt/estudio-pedra-industrial
 sed -i "s/DOMAIN/<domain>/g" deploy/Caddyfile     # e.g. sed -i "s/DOMAIN/estudiopedra.com.br/g" ...
+caddy validate --config deploy/Caddyfile --adapter caddyfile   # catches typos before reloading
 cp deploy/Caddyfile /etc/caddy/Caddyfile
 systemctl reload caddy
 

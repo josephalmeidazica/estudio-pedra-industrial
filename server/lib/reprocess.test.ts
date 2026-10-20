@@ -41,15 +41,23 @@ test("reprocess converts legacy rows once, skips missing files, and is a no-op a
     await sharp({ create: { width: 600, height: 400, channels: 3, background: "#000" } }).jpeg().toBuffer()
   );
 
-  const first = await reprocessLegacyImages(db, () => {});
-  expect(first).toEqual({ processed: 2, skipped: 1 });
+  const corrupt = await repo.addImage(db, { productId: p.id, url: "/uploads/corrupt.jpg" });
+  const whole = await sharp({ create: { width: 900, height: 600, channels: 3, background: "#000" } }).jpeg().toBuffer();
+  fs.writeFileSync(path.join(dir, "corrupt.jpg"), whole.subarray(0, Math.floor(whole.length * 0.5)));
+
+  const lines: string[] = [];
+  const first = await reprocessLegacyImages(db, (l) => lines.push(l));
+  expect(first).toEqual({ processed: 2, skipped: 2 });
+  expect(lines.some((l) => l.startsWith(`skip #${corrupt.id}`))).toBe(true);
   const rows = await repo.listForProduct(db, p.id);
   const byId = new Map(rows.map((r) => [r.id, r]));
   expect(byId.get(legacyDefault.id)!.url).toMatch(/-1080\.webp$/);
   expect(Object.keys(byId.get(legacyUpload.id)!.variants)).toEqual(["480", "600"]);
   expect(byId.get(missing.id)!.width).toBe(0);
+  expect(byId.get(corrupt.id)!.width).toBe(0);
+  expect(fs.existsSync(path.join(dir, "corrupt.jpg"))).toBe(true); // untouched, for the owner to inspect
   expect(fs.existsSync(path.join(dir, "old.jpg"))).toBe(false);
   expect(fs.existsSync(path.join(process.cwd(), "client", "public", "products", "mesa-urb.jpg"))).toBe(true);
 
-  expect(await reprocessLegacyImages(db, () => {})).toEqual({ processed: 0, skipped: 1 });
+  expect(await reprocessLegacyImages(db, () => {})).toEqual({ processed: 0, skipped: 2 });
 });

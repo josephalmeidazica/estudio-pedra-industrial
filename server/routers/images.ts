@@ -2,7 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { adminProcedure, router } from "../trpc";
 import * as repo from "../db/images.repo";
-import { processUpload } from "../lib/imagePipeline";
+import { isUploadRejection, processUpload } from "../lib/imagePipeline";
 import { deleteImageByUrl } from "../lib/images";
 
 export const imagesRouter = router({
@@ -13,7 +13,10 @@ export const imagesRouter = router({
       try {
         processed = await processUpload(input.dataUrl);
       } catch (e) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: (e as Error).message });
+        // The owner's file is the problem -> 400 with the Portuguese guidance.
+        // Anything else (disk full, permissions) is ours -> let tRPC report a 500.
+        if (isUploadRejection(e)) throw new TRPCError({ code: "BAD_REQUEST", message: e.message });
+        throw e;
       }
       return repo.addImage(ctx.db, { productId: input.productId, alt: input.alt, ...processed });
     }),

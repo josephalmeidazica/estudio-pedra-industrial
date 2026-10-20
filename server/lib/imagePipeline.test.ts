@@ -101,6 +101,17 @@ test("processUpload rejects HEIC (declared or octet-stream), oversized, and garb
   expect(fs.existsSync(dir) ? fs.readdirSync(dir) : []).toEqual([]);
 });
 
+test("a truncated JPEG (header intact, body cut) is rejected with the unsupported message and leaves no files", async () => {
+  process.env.UPLOADS_DIR = tmpDir();
+  const whole = await solid(2000, 1500).jpeg().toBuffer();
+  const truncated = whole.subarray(0, Math.floor(whole.length * 0.5));
+  await expect(processUpload("data:image/jpeg;base64," + truncated.toString("base64"))).rejects.toThrow(
+    UNSUPPORTED_IMAGE_MESSAGE
+  );
+  const dir = process.env.UPLOADS_DIR!;
+  expect(fs.existsSync(dir) ? fs.readdirSync(dir) : []).toEqual([]);
+});
+
 test("processUpload accepts a real png data url", async () => {
   process.env.UPLOADS_DIR = tmpDir();
   const png = await solid(100, 100).png().toBuffer();

@@ -18,6 +18,18 @@ export const HEIC_MESSAGE =
 export const UPLOAD_TOO_LARGE_MESSAGE =
   "Imagem muito grande (máximo de 20 MB). Envie uma foto menor.";
 
+/** Messages that describe something wrong with the upload itself (a 400), not with the server. */
+const UPLOAD_REJECTION_MESSAGES = new Set([
+  HEIC_MESSAGE,
+  UPLOAD_TOO_LARGE_MESSAGE,
+  UNSUPPORTED_IMAGE_MESSAGE,
+  "Invalid data URL",
+]);
+
+export function isUploadRejection(e: unknown): e is Error {
+  return e instanceof Error && UPLOAD_REJECTION_MESSAGES.has(e.message);
+}
+
 /**
  * Widths to generate for a source of `sourceWidth` px: every standard width
  * below the cap, then the cap itself, where the cap is the source width or
@@ -57,7 +69,11 @@ export type ProcessedImage = {
 
 /**
  * Decode `buffer`, auto-orient it, and write WebP variants into `dir`.
- * Throws `UNSUPPORTED_IMAGE_MESSAGE` when sharp cannot decode the bytes.
+ *
+ * Any libvips failure (undecodable or truncated file) becomes
+ * `UNSUPPORTED_IMAGE_MESSAGE`; filesystem failures propagate with their
+ * `code` so callers can tell the owner's bad file from our own fault. On any
+ * failure the variants already written for this image are removed.
  */
 export async function processImage(buffer: Buffer, dir: string = uploadsDir()): Promise<ProcessedImage> {
   let meta: Metadata;
@@ -74,19 +90,41 @@ export async function processImage(buffer: Buffer, dir: string = uploadsDir()): 
 
   fs.mkdirSync(dir, { recursive: true });
   const id = crypto.randomUUID();
+  const source = sharp(buffer).rotate(); // decoded once, cloned per width
   const variants: Record<string, string> = {};
+  const written: string[] = [];
   let width = 0;
   let height = 0;
-  for (const w of widths) {
-    const file = variantFileName(id, w);
-    const info = await sharp(buffer)
-      .rotate()
-      .resize({ width: w, withoutEnlargement: true })
-      .webp({ quality: WEBP_QUALITY })
-      .toFile(path.join(dir, file));
-    variants[String(w)] = `/uploads/${file}`;
-    width = info.width;
-    height = info.height;
+  try {
+    for (const w of widths) {
+      let data: Buffer;
+      let info: { width: number; height: number };
+      try {
+        ({ data, info } = await source
+          .clone()
+          .resize({ width: w, withoutEnlargement: true })
+          .webp({ quality: WEBP_QUALITY })
+          .toBuffer({ resolveWithObject: true }));
+      } catch {
+        throw new Error(UNSUPPORTED_IMAGE_MESSAGE);
+      }
+      const file = variantFileName(id, w);
+      const abs = path.join(dir, file);
+      fs.writeFileSync(abs, data);
+      written.push(abs);
+      variants[String(w)] = `/uploads/${file}`;
+      width = info.width;
+      height = info.height;
+    }
+  } catch (e) {
+    for (const f of written) {
+      try {
+        fs.rmSync(f, { force: true });
+      } catch {
+        /* best effort */
+      }
+    }
+    throw e;
   }
   return { url: variants[String(widths[widths.length - 1])], width, height, variants };
 }

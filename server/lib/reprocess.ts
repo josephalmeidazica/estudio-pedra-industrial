@@ -33,7 +33,15 @@ export async function reprocessLegacyImages(
       log(`skip #${row.id}: source not found for ${row.url}`);
       continue;
     }
-    const result = await processImage(fs.readFileSync(source));
+    let result;
+    try {
+      result = await processImage(fs.readFileSync(source));
+    } catch (e) {
+      // A corrupt or undecodable file must not stop the run; leave it for the owner to inspect.
+      skipped++;
+      log(`skip #${row.id}: could not process ${row.url}: ${(e as Error).message}`);
+      continue;
+    }
     await repo.setProcessed(db, row.id, result);
     if (row.url.startsWith("/uploads/")) deleteImageByUrl(row.url);
     processed++;

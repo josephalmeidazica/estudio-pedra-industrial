@@ -4,7 +4,7 @@ import path from "node:path";
 import sharp from "sharp";
 import { afterEach, beforeEach, expect, test } from "vitest";
 import { createDb, type DB } from "../db/client";
-import { HEIC_MESSAGE } from "../lib/imagePipeline";
+import { HEIC_MESSAGE, UNSUPPORTED_IMAGE_MESSAGE } from "../lib/imagePipeline";
 import { appRouter } from "./index";
 import type { TrpcContext } from "../trpc";
 
@@ -84,6 +84,27 @@ test("images.add rejects HEIC with the Portuguese guidance and stores nothing", 
   ).rejects.toMatchObject({ code: "BAD_REQUEST", message: HEIC_MESSAGE });
   expect(uploads()).toEqual([]);
   expect((await admin.products.listAll())[0].images).toEqual([]);
+});
+
+test("images.add maps a corrupt file to BAD_REQUEST in Portuguese, and a server fault to INTERNAL_SERVER_ERROR", async () => {
+  const db = freshDb();
+  const admin = appRouter.createCaller(ctxFor(db, "test-token"));
+  const p = await admin.products.create({ name: "P" });
+  const whole = await sharp({ create: { width: 900, height: 600, channels: 3, background: "#000" } }).jpeg().toBuffer();
+  const truncated = whole.subarray(0, Math.floor(whole.length * 0.5));
+  await expect(
+    admin.images.add({ productId: p.id, dataUrl: "data:image/jpeg;base64," + truncated.toString("base64") })
+  ).rejects.toMatchObject({ code: "BAD_REQUEST", message: UNSUPPORTED_IMAGE_MESSAGE });
+  expect(uploads()).toEqual([]);
+
+  // Uploads dir is a regular file: mkdir fails. That is our fault, not the owner's.
+  const blocker = path.join(os.tmpdir(), `eps-blocker-${Date.now()}`);
+  fs.writeFileSync(blocker, "x");
+  process.env.UPLOADS_DIR = blocker;
+  await expect(admin.images.add({ productId: p.id, dataUrl: await pngDataUrl(100, 100) })).rejects.toMatchObject({
+    code: "INTERNAL_SERVER_ERROR",
+  });
+  fs.rmSync(blocker, { force: true });
 });
 
 test("images.delete and products.delete remove every variant file", async () => {
