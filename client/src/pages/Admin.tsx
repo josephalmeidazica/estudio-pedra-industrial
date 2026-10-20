@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { TRPCClientError } from "@trpc/client";
 import { ArrowDown, ArrowUp, LogOut, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -17,6 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import type { AdminProduct } from "@/lib/types";
 import { thumbUrl } from "@/lib/imageSrcSet";
+import { SESSION_EXPIRED_MESSAGE, isUnauthorizedError } from "@/lib/sessionErrors";
 import { trpc } from "@/lib/trpc";
 import { usePageTitle } from "@/lib/usePageTitle";
 import { titles } from "@shared/seo-text";
@@ -55,14 +57,29 @@ export default function Admin() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [toDelete, setToDelete] = useState<AdminProduct | null>(null);
 
-  // A 401 on an admin query means the cookie expired or the password changed.
-  const sessionExpired = listAll.error?.data?.code === "UNAUTHORIZED";
+  // A 401 from ANY admin call (list, save, upload, Lixeira…) means the cookie
+  // expired or the passphrase changed: back to the login screen. Only while
+  // logged in, so a wrong password on the login form is not mistaken for it.
+  const queryClient = useQueryClient();
+  const authenticatedRef = useRef(authenticated);
+  authenticatedRef.current = authenticated;
   useEffect(() => {
-    if (sessionExpired) {
-      setLoginError("Sua sessão expirou. Entre de novo.");
+    const onError = (error: unknown) => {
+      if (!authenticatedRef.current || !isUnauthorizedError(error)) return;
+      setLoginError(SESSION_EXPIRED_MESSAGE);
       utils.auth.me.setData(undefined, { authenticated: false });
-    }
-  }, [sessionExpired, utils]);
+    };
+    const unsubQueries = queryClient.getQueryCache().subscribe((event) => {
+      if (event.type === "updated" && event.action.type === "error") onError(event.query.state.error);
+    });
+    const unsubMutations = queryClient.getMutationCache().subscribe((event) => {
+      if (event.type === "updated" && event.action.type === "error") onError(event.mutation.state.error);
+    });
+    return () => {
+      unsubQueries();
+      unsubMutations();
+    };
+  }, [queryClient, utils]);
 
   const login = async () => {
     const password = pw.trim();

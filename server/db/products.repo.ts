@@ -156,11 +156,9 @@ export async function updateProduct(
 export async function discardEmptyDraft(db: DB, id: number): Promise<boolean> {
   const p = (await db.select().from(products).where(eq(products.id, id)).limit(1))[0];
   if (!p || p.name !== DRAFT_NAME || p.description !== "" || p.published) return false;
-  const imgs = await db
-    .select({ id: productImages.id })
-    .from(productImages)
-    .where(and(eq(productImages.productId, id), isNull(productImages.deletedAt)))
-    .limit(1);
+  // Any photo row counts, including one already moved to the Lixeira: the
+  // cascade would silently drop it and orphan its files.
+  const imgs = await db.select({ id: productImages.id }).from(productImages).where(eq(productImages.productId, id)).limit(1);
   if (imgs.length > 0) return false;
   await db.delete(products).where(eq(products.id, id));
   return true;

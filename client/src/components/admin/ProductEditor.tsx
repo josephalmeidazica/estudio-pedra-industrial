@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { buildProductPatch, emptyForm, type ProductForm as Form } from "@/lib/productPatch";
+import { isUnauthorizedError } from "@/lib/sessionErrors";
 import { trpc } from "@/lib/trpc";
 import { DRAFT_PRODUCT_NAME } from "@shared/draft";
 import { ImageManager } from "./ImageManager";
@@ -19,19 +21,6 @@ type Props = {
   /** `null` = "Nova peça": a hidden draft is created the moment the editor opens. */
   productId: number | null;
 };
-
-const emptyForm = {
-  name: "",
-  slug: "",
-  description: "",
-  category: "",
-  materials: "",
-  dimensions: "",
-  price: "",
-  featured: false,
-  isCustom: false,
-};
-type Form = typeof emptyForm;
 
 // Full-screen below `sm`, the usual centred dialog above it. A flex column
 // (not the default grid) so the body scrolls while header and footer stay put;
@@ -57,6 +46,9 @@ export function ProductEditor({ open, onOpenChange, productId }: Props) {
   const [isNewDraft, setIsNewDraft] = useState(false);
   const [form, setForm] = useState<Form>(emptyForm);
   const [loadedFor, setLoadedFor] = useState<number | null>(null);
+  // The slug field is a snapshot; the server may re-derive the slug on publish.
+  // Only an edit by the owner makes the form's slug worth sending back.
+  const [slugDirty, setSlugDirty] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
@@ -73,6 +65,7 @@ export function ProductEditor({ open, onOpenChange, productId }: Props) {
     if (!open) return;
     setForm(emptyForm);
     setLoadedFor(null);
+    setSlugDirty(false);
     setMoreOpen(false);
     setConfirmingDelete(false);
     if (productId != null) {
@@ -99,7 +92,12 @@ export function ProductEditor({ open, onOpenChange, productId }: Props) {
 
   // Fill the form once the product row is available (once per opened piece).
   useEffect(() => {
-    if (!product || loadedFor === product.id) return;
+    if (!product) return;
+    // Keep the slug field in step with what the server derived until the owner edits it.
+    if (loadedFor === product.id) {
+      if (!slugDirty) setForm((f) => (f.slug === product.slug ? f : { ...f, slug: product.slug }));
+      return;
+    }
     setForm({
       name: product.name === DRAFT_PRODUCT_NAME ? "" : product.name,
       slug: product.slug,
@@ -112,7 +110,7 @@ export function ProductEditor({ open, onOpenChange, productId }: Props) {
       isCustom: product.isCustom,
     });
     setLoadedFor(product.id);
-  }, [product, loadedFor]);
+  }, [product, loadedFor, slugDirty]);
 
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -131,29 +129,20 @@ export function ProductEditor({ open, onOpenChange, productId }: Props) {
 
   const save = async (publish?: boolean): Promise<boolean> => {
     if (id == null || !nameOk) return false;
-    const price = form.price.trim() === "" ? null : Number(form.price);
-    if (price !== null && Number.isNaN(price)) {
+    const patch = buildProductPatch(form, product, { slugDirty, publish });
+    if (!patch) {
       toast.error("Preço inválido.");
       return false;
     }
     try {
-      await update.mutateAsync({
-        id,
-        name: form.name.trim(),
-        description: form.description,
-        category: form.category.trim(),
-        materials: form.materials,
-        dimensions: form.dimensions,
-        price,
-        featured: form.featured,
-        isCustom: form.isCustom,
-        ...(publish !== undefined ? { published: publish } : {}),
-        ...(form.slug.trim() && form.slug.trim() !== product?.slug ? { slug: form.slug.trim() } : {}),
-      });
+      await update.mutateAsync({ id, ...patch });
       await refreshLists();
       return true;
     } catch (e) {
-      toast.error(e instanceof TRPCClientError ? e.message : "Erro ao salvar. Verifique os campos e tente de novo.");
+      // A dead session is handled by the admin page (back to the login screen).
+      if (!isUnauthorizedError(e)) {
+        toast.error(e instanceof TRPCClientError ? e.message : "Erro ao salvar. Verifique os campos e tente de novo.");
+      }
       return false;
     }
   };
@@ -263,7 +252,15 @@ export function ProductEditor({ open, onOpenChange, productId }: Props) {
             <CollapsibleContent className="space-y-3 pt-2">
               <div className="space-y-1">
                 <Label htmlFor="p-slug">Endereço (slug)</Label>
-                <Input id="p-slug" placeholder="gerado a partir do nome" value={form.slug} onChange={(e) => set("slug", e.target.value)} />
+                <Input
+                  id="p-slug"
+                  placeholder="gerado a partir do nome"
+                  value={form.slug}
+                  onChange={(e) => {
+                    setSlugDirty(true);
+                    set("slug", e.target.value);
+                  }}
+                />
               </div>
               <div className="space-y-1">
                 <Label htmlFor="p-price">Preço (vazio = sob consulta)</Label>

@@ -29,6 +29,21 @@ afterEach(() => {
   while (dirs.length) fs.rmSync(dirs.pop()!, { recursive: true, force: true });
 });
 
+test("purge only removes rows that are in the Lixeira (a stale tab cannot hard-delete a live piece)", async () => {
+  const db = freshDb();
+  const p = await prods.createProduct(db, { name: "Viva" });
+  const img = await images.addImage(db, { productId: p.id, url: "/uploads/v-480.webp", width: 480, height: 300, variants: {} });
+  expect(await trash.purge(db, "product", p.id)).toBeNull();
+  expect(await trash.purge(db, "image", img.id)).toBeNull();
+  expect(await prods.listAll(db)).toHaveLength(1);
+  expect((await prods.getBySlug(db, "viva"))!.images).toHaveLength(1);
+
+  expect(await trash.softDelete(db, "image", img.id)).toBe(true);
+  expect(await trash.purge(db, "image", img.id)).toEqual(["/uploads/v-480.webp"]);
+  expect(await trash.purge(db, "image", img.id)).toBeNull(); // already gone
+  expect(await trash.purge(db, "gallery", 999)).toBeNull();
+});
+
 test("soft delete hides from every read; restore brings it back; images follow their product", async () => {
   const db = freshDb();
   const p = await prods.createProduct(db, { name: "Mesa Urb" });

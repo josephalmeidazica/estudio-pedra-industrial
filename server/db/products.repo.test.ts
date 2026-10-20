@@ -126,3 +126,11 @@ test("slug follows the name while unpublished, freezes once published; discardEm
   expect(await repo.discardEmptyDraft(db, d.id)).toBe(false);
   expect(await repo.listAll(db)).toHaveLength(3);
 });
+
+test("discardEmptyDraft keeps a draft whose only photo is in the Lixeira (its file is not orphaned)", async () => {
+  const db = freshDb();
+  const d = await repo.createProduct(db, { name: "Nova peça", published: false });
+  await db.insert(productImages).values({ productId: d.id, url: "/uploads/t-480.webp", deletedAt: new Date() });
+  expect(await repo.discardEmptyDraft(db, d.id)).toBe(false);
+  expect(await repo.listAll(db)).toHaveLength(1);
+});

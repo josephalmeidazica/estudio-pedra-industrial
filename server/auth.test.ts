@@ -66,6 +66,23 @@ test("login sets a session cookie that authorises admin calls; logout clears it;
   }
 });
 
+test("wrong bearer tokens count against the login limiter, so the passphrase cannot be brute-forced through the API", async () => {
+  const { server, get } = await serve(freshDb());
+  try {
+    for (let i = 0; i < 5; i++) {
+      expect((await get("products.listAll", { authorization: "Bearer nope", "x-forwarded-for": "7.7.7.7" })).status).toBe(401);
+    }
+    const throttled = await get("products.listAll", { authorization: `Bearer ${PASSWORD}`, "x-forwarded-for": "7.7.7.7" });
+    expect(throttled.status).toBe(429);
+    expect((await get("products.listAll", { authorization: `Bearer ${PASSWORD}`, "x-forwarded-for": "6.6.6.6" })).status).toBe(200);
+    // An expired or garbage cookie is not a guess attempt: it must never lock an owner out.
+    for (let i = 0; i < 6; i++) await get("products.listAll", { cookie: "eps_session=1.garbage", "x-forwarded-for": "5.5.5.5" });
+    expect((await get("products.listAll", { authorization: `Bearer ${PASSWORD}`, "x-forwarded-for": "5.5.5.5" })).status).toBe(200);
+  } finally {
+    await new Promise((r) => server.close(r));
+  }
+});
+
 test("login over a forwarded https request sets Secure; five failures throttle that ip only", async () => {
   const { server, call } = await serve(freshDb());
   try {

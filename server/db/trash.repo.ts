@@ -87,21 +87,34 @@ export async function restore(db: DB, kind: TrashKind, id: number): Promise<bool
   }
 }
 
-/** Hard delete. Returns the image urls whose files must be removed from disk. */
-export async function purge(db: DB, kind: TrashKind, id: number): Promise<string[]> {
+/**
+ * Hard delete of a row that is in the Lixeira. Returns the image urls whose
+ * files must be removed from disk, or null when the row is not in the Lixeira
+ * (missing, or alive again because it was restored from another device).
+ */
+export async function purge(db: DB, kind: TrashKind, id: number): Promise<string[] | null> {
   switch (kind) {
     case "product": {
+      const row = (await db.select({ deletedAt: products.deletedAt }).from(products).where(eq(products.id, id)).limit(1))[0];
+      if (!row?.deletedAt) return null;
+      // Every photo of the piece, trashed or not: the cascade removes all their rows.
       const imgs = await db.select({ url: productImages.url }).from(productImages).where(eq(productImages.productId, id));
-      const deleted = await db.delete(products).where(eq(products.id, id)).returning({ id: products.id });
-      return deleted.length ? imgs.map((i) => i.url) : [];
+      await db.delete(products).where(and(eq(products.id, id), isNotNull(products.deletedAt)));
+      return imgs.map((i) => i.url);
     }
     case "image": {
-      const deleted = await db.delete(productImages).where(eq(productImages.id, id)).returning({ url: productImages.url });
-      return deleted.map((d) => d.url);
+      const deleted = await db
+        .delete(productImages)
+        .where(and(eq(productImages.id, id), isNotNull(productImages.deletedAt)))
+        .returning({ url: productImages.url });
+      return deleted.length ? deleted.map((d) => d.url) : null;
     }
     case "gallery": {
-      const deleted = await db.delete(galleryImages).where(eq(galleryImages.id, id)).returning({ url: galleryImages.url });
-      return deleted.map((d) => d.url);
+      const deleted = await db
+        .delete(galleryImages)
+        .where(and(eq(galleryImages.id, id), isNotNull(galleryImages.deletedAt)))
+        .returning({ url: galleryImages.url });
+      return deleted.length ? deleted.map((d) => d.url) : null;
     }
   }
 }
@@ -111,10 +124,10 @@ export async function purgeExpired(db: DB, now = new Date(), maxAgeMs = TRASH_RE
   const cutoff = new Date(now.getTime() - maxAgeMs);
   const urls: string[] = [];
   const oldProducts = await db.select({ id: products.id }).from(products).where(and(isNotNull(products.deletedAt), lte(products.deletedAt, cutoff)));
-  for (const p of oldProducts) urls.push(...(await purge(db, "product", p.id)));
+  for (const p of oldProducts) urls.push(...((await purge(db, "product", p.id)) ?? []));
   const oldImages = await db.select({ id: productImages.id }).from(productImages).where(and(isNotNull(productImages.deletedAt), lte(productImages.deletedAt, cutoff)));
-  for (const i of oldImages) urls.push(...(await purge(db, "image", i.id)));
+  for (const i of oldImages) urls.push(...((await purge(db, "image", i.id)) ?? []));
   const oldGallery = await db.select({ id: galleryImages.id }).from(galleryImages).where(and(isNotNull(galleryImages.deletedAt), lte(galleryImages.deletedAt, cutoff)));
-  for (const g of oldGallery) urls.push(...(await purge(db, "gallery", g.id)));
+  for (const g of oldGallery) urls.push(...((await purge(db, "gallery", g.id)) ?? []));
   return urls;
 }

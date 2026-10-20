@@ -17,6 +17,7 @@ export const trashRouter = router({
   // "Excluir definitivamente": rows and files are gone for good.
   purge: adminProcedure.input(item).mutation(async ({ ctx, input }) => {
     const urls = await repo.purge(ctx.db, input.kind, input.id);
+    if (urls === null) throw new TRPCError({ code: "NOT_FOUND", message: "Item not in trash" });
     urls.forEach(deleteImageByUrl);
     return { ok: true as const, files: urls.length };
   }),

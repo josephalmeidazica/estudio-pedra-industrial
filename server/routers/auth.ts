@@ -1,19 +1,8 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { publicProcedure, router } from "../trpc";
-import { isValidAdminRequest, isValidAdminToken } from "../lib/auth";
-import {
-  LOGIN_THROTTLED_MESSAGE,
-  SESSION_TTL_MS,
-  clearSessionCookie,
-  createLoginLimiter,
-  serializeSessionCookie,
-  sessionKey,
-  signSession,
-} from "../lib/session";
-
-/** One process, one limiter: 5 failed logins per IP per 15 minutes. */
-export const loginLimiter = createLoginLimiter();
+import { isValidAdminRequest, isValidAdminToken, loginLimiter } from "../lib/auth";
+import { LOGIN_THROTTLED_MESSAGE, SESSION_TTL_MS, clearSessionCookie, serializeSessionCookie, sessionKey, signSession } from "../lib/session";
 
 export const authRouter = router({
   login: publicProcedure.input(z.object({ password: z.string() })).mutation(({ ctx, input }) => {

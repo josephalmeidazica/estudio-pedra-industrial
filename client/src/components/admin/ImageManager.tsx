@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { convertHeicToJpeg, isHeicFile } from "@/lib/heic";
 import { compressImage } from "@/lib/imageCompress";
+import { isUnauthorizedError } from "@/lib/sessionErrors";
 import { thumbUrl, type ImageLike } from "@/lib/imageSrcSet";
 
 export type ManagedImage = ImageLike & { id: number };
@@ -81,6 +82,7 @@ export function ImageManager({ images, title = "Fotos", actions, onChanged, rend
         await actions.add(await prepareUpload(file));
       } catch (e) {
         failed++;
+        if (isUnauthorizedError(e)) break; // the admin page sends the owner back to the login screen
         // Server messages are specific (size cap, unsupported format); so is the HEIC one.
         const specific = e instanceof TRPCClientError || e instanceof HeicConversionError;
         toast.error(specific ? e.message : `Não foi possível enviar ${file.name}.`);
