@@ -8,8 +8,7 @@ import { ArrowLeft, Plus, X, ChevronLeft, ChevronRight, Tag } from "lucide-react
 import { Link } from "wouter";
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import { CartProvider } from "@/components/cart/CartContext";
-import { CartWidget } from "@/components/cart/CartWidget";
+import { Layout } from "@/components/layout/Layout";
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
 
 export default function Catalog() {
@@ -52,58 +51,20 @@ export default function Catalog() {
   const currentProduct = selectedProduct ? products.find(p => p.id === selectedProduct) : null;
 
   return (
-  <CartProvider>
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-background sticky top-0 z-50">
-        <div className="container">
-          <nav className="flex items-center justify-between py-6">
-            <Link href="/">
-              <div className="flex items-center gap-3 hover:opacity-80 transition-opacity duration-300 cursor-pointer">
-                <img 
-                  src="/logo.png" 
-                  alt="Estúdio Pedra Industrial Logo"
-                  className="w-12 h-12 object-contain"
-                />
-                <div>
-                  <p className="heading-secondary text-sm font-bold text-foreground">Estúdio Pedra</p>
-                  <p className="text-xs text-accent-mono text-muted-foreground">INDUSTRIAL</p>
-                </div>
-              </div>
-            </Link>
-            <div className="hidden md:flex items-center gap-12">
-              <a href="/" className="heading-secondary text-sm text-foreground hover:text-secondary transition-colors duration-300">
-                Início
-              </a>
-              <a href="/#servicos" className="heading-secondary text-sm text-foreground hover:text-secondary transition-colors duration-300">
-                Serviços
-              </a>
-              <a href="/#sobre" className="heading-secondary text-sm text-foreground hover:text-secondary transition-colors duration-300">
-                Sobre
-              </a>
-              <a href="/#contato" className="heading-secondary text-sm text-foreground hover:text-secondary transition-colors duration-300">
-                Contato
-              </a>
-            </div>
-          </nav>
-        </div>
-      </header>
+  <Layout showCart>
 
       {/* Catalog Header */}
       <section className="py-20 bg-background border-b border-border">
         <div className="container">
-          <div className="flex items-center justify-between mb-8">
+          <div className="mb-8">
             <Link href="/">
               <div className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors duration-300 cursor-pointer">
                 <ArrowLeft className="w-4 h-4" />
                 Voltar
               </div>
             </Link>
-            <div className="flex items-center gap-4">
-              <CartWidget />
-            </div>
           </div>
-          <h1 className="text-6xl md:text-7xl heading-display text-foreground mb-6">
+          <h1 className="text-5xl sm:text-6xl md:text-7xl heading-display text-foreground mb-6">
             Portfólio de Produtos
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl">
@@ -251,7 +212,6 @@ export default function Catalog() {
           )}
         </div>
       )}
-    </div>
-  </CartProvider>
+  </Layout>
   );
 }

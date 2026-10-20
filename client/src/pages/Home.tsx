@@ -6,44 +6,14 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowRight, Hammer, Leaf, Truck, Award, Sparkles, Target, Heart, ShoppingBag, MessageCircle } from "lucide-react";
+import { ArrowRight, Hammer, Leaf, Truck, Award, Sparkles, Target, Heart } from "lucide-react";
+import { Layout } from "@/components/layout/Layout";
+import { WHATSAPP_LINK } from "@/lib/whatsapp";
 import { Link } from "wouter";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header/Navigation */}
-      <header className="border-b border-border bg-background sticky top-0 z-50">
-        <div className="container">
-          <nav className="flex items-center justify-between py-6">
-            <div className="hidden md:flex items-center gap-12">
-              <a href="/" className="heading-secondary text-sm text-foreground hover:text-secondary transition-colors duration-300">
-                Início
-              </a>
-              <a href="/#servicos" className="heading-secondary text-sm text-foreground hover:text-secondary transition-colors duration-300">
-                Serviços
-              </a>
-              <a href="/#sobre" className="heading-secondary text-sm text-foreground hover:text-secondary transition-colors duration-300">
-                Sobre
-              </a>
-              <a href="/contato" className="heading-secondary text-sm text-foreground hover:text-secondary transition-colors duration-300">
-                Contato
-              </a>
-              <a href="/catalogo" className="heading-secondary text-sm text-foreground hover:text-secondary transition-colors duration-300">
-                Portfólio
-              </a>
-              <a href="https://wa.me/5531971803551" target="_blank" rel="noopener noreferrer">
-                <Button 
-                  className="bg-foreground text-background hover:bg-secondary text-sm px-6 py-2 rounded heading-secondary transition-all duration-300 flex items-center gap-2"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  Faça um Orçamento
-                </Button>
-              </a>
-            </div>
-          </nav>
-        </div>
-      </header>
+    <Layout>
 
       {/* Hero Section */}
       <section className="py-32 md:py-48 bg-background">
@@ -51,7 +21,7 @@ export default function Home() {
 
           <div className="flex flex-col md:flex-row items-center gap-12 mb-12">
             <div className="flex-1">
-              <h1 className="text-5xl md:text-6xl heading-display text-foreground mb-8 leading-tight">
+              <h1 className="text-4xl sm:text-5xl md:text-6xl heading-display text-foreground mb-8 leading-tight">
                 Móveis industriais personalizados
               </h1>
             </div>
@@ -69,7 +39,7 @@ export default function Home() {
 Nossa criatividade está em unir estética industrial, funcionalidade e inovação em cada projeto.
           </p>
           <div className="flex flex-col md:flex-row gap-6">
-            <a href="https://wa.me/5531971803551" target="_blank" rel="noopener noreferrer">
+            <a href={WHATSAPP_LINK} target="_blank" rel="noopener noreferrer">
               <Button 
                 className="bg-foreground text-background hover:bg-secondary text-sm px-8 py-3 rounded heading-secondary transition-all duration-300 inline-flex items-center gap-2 w-fit"
               >
@@ -118,7 +88,7 @@ Nossa criatividade está em unir estética industrial, funcionalidade e inovaç�
             <div className="inline-block mb-6 px-4 py-1 border border-foreground/30 rounded">
               <span className="text-accent-mono text-foreground text-xs">SERVIÇOS</span>
             </div>
-            <h2 className="text-6xl md:text-7xl heading-display text-foreground mb-6">
+            <h2 className="text-5xl sm:text-6xl md:text-7xl heading-display text-foreground mb-6">
               Nossos Serviços
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl">
@@ -196,7 +166,7 @@ Nossa criatividade está em unir estética industrial, funcionalidade e inovaç�
             <div className="inline-block mb-6 px-4 py-1 border border-foreground/30 rounded">
               <span className="text-accent-mono text-foreground text-xs">NOSSA HISTÓRIA</span>
             </div>
-            <h2 className="text-6xl md:text-7xl heading-display text-foreground mb-8">
+            <h2 className="text-5xl sm:text-6xl md:text-7xl heading-display text-foreground mb-8">
               Precisão e elegância
             </h2>
           </div>
@@ -222,7 +192,7 @@ Nossa criatividade está em unir estética industrial, funcionalidade e inovaç�
             <div className="inline-block mb-6 px-4 py-1 border border-foreground/30 rounded">
               <span className="text-accent-mono text-foreground text-xs">PILARES</span>
             </div>
-            <h2 className="text-6xl md:text-7xl heading-display text-foreground">
+            <h2 className="text-5xl sm:text-6xl md:text-7xl heading-display text-foreground">
               Missão, Visão e Valores
             </h2>
           </div>
@@ -305,7 +275,7 @@ Nossa criatividade está em unir estética industrial, funcionalidade e inovaç�
       <section className="py-32 bg-foreground">
         <div className="container">
           <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-6xl md:text-7xl heading-display text-background mb-8">
+            <h2 className="text-5xl sm:text-6xl md:text-7xl heading-display text-background mb-8">
               Transforme seu espaço
             </h2>
             <p className="text-lg text-background/80 mb-12">
@@ -319,7 +289,7 @@ Nossa criatividade está em unir estética industrial, funcionalidade e inovaç�
                   Ver portfólio
                 </Button>
               </a>
-              <a href="https://wa.me/5531971803551" target="_blank" rel="noopener noreferrer">
+              <a href={WHATSAPP_LINK} target="_blank" rel="noopener noreferrer">
                 <Button 
                   variant="outline"
                   className="border border-background text-background hover:bg-background/10 text-sm px-8 py-3 rounded heading-secondary transition-all duration-300"
@@ -332,52 +302,6 @@ Nossa criatividade está em unir estética industrial, funcionalidade e inovaç�
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-16 bg-card border-t border-border">
-        <div className="container">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
-            <div>
-              <div className="mb-6">
-                <img 
-                  src="/logo.png" 
-                  alt="Estúdio Pedra Industrial Logo"
-                  className="w-16 h-16 object-contain mb-4"
-                />
-              </div>
-              <p className="text-sm text-muted-foreground mb-6">
-                Móveis em aço carbono e MDF que transformam espaços em experiências.
-              </p>
-            </div>
-            <div>
-              <h4 className="heading-secondary text-sm mb-6 text-foreground">Navegação</h4>
-              <ul className="space-y-3 text-sm text-muted-foreground">
-                <li><a href="#servicos" className="hover:text-foreground transition-colors duration-300">Serviços</a></li>
-                <li><a href="#sobre" className="hover:text-foreground transition-colors duration-300">Sobre</a></li>
-                <li><a href="#contato" className="hover:text-foreground transition-colors duration-300">Contato</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="heading-secondary text-sm mb-6 text-foreground">Contato</h4>
-              <ul className="space-y-3 text-sm text-muted-foreground">
-                <li>@estudio.pedraindustrial</li>
-                <li>(31) 97180-3551</li>
-                <li>Belo Horizonte - MG</li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="heading-secondary text-sm mb-6 text-foreground">Horário</h4>
-              <ul className="space-y-3 text-sm text-muted-foreground">
-                <li>Seg-Sex: 8h - 18h</li>
-                <li>Sábado: 9h - 12h</li>
-                <li>Domingo: Fechado</li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-border pt-8 text-center text-sm text-muted-foreground">
-            <p>&copy; 2026 Estúdio Pedra Industrial. Todos os direitos reservados.</p>
-          </div>
-        </div>
-      </footer>
-    </div>
+    </Layout>
   );
 }
