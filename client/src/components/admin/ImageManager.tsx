@@ -3,6 +3,7 @@ import { TRPCClientError } from "@trpc/client";
 import { ChevronLeft, ChevronRight, Star, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { convertHeicToJpeg, isHeicFile } from "@/lib/heic";
 import { compressImage } from "@/lib/imageCompress";
 import { thumbUrl, type ImageLike } from "@/lib/imageSrcSet";
 
@@ -29,13 +30,37 @@ type Props = {
   renderExtra?(img: ManagedImage): ReactNode;
 };
 
-const readAsDataUrl = (file: File) =>
+const readAsDataUrl = (blob: Blob) =>
   new Promise<string>((res, rej) => {
     const r = new FileReader();
     r.onload = (e) => res(e.target?.result as string);
     r.onerror = () => rej(r.error);
-    r.readAsDataURL(file);
+    r.readAsDataURL(blob);
   });
+
+const readHead = async (file: File) => new Uint8Array(await file.slice(0, 16).arrayBuffer());
+
+/** Raised when a HEIC could not be converted; its message is shown as-is. */
+class HeicConversionError extends Error {}
+
+/**
+ * Browser-side JPEG for upload. Safari decodes HEIC natively; elsewhere the
+ * first decode fails and, if the bytes look like HEIC, the lazy converter runs.
+ */
+async function prepareUpload(file: File): Promise<string> {
+  const first = await compressImage(await readAsDataUrl(file));
+  if (first.decoded || !isHeicFile(file, await readHead(file))) return first.dataUrl;
+
+  const toastId = toast.loading("Convertendo foto do iPhone…");
+  try {
+    const jpeg = await convertHeicToJpeg(file);
+    return (await compressImage(await readAsDataUrl(jpeg))).dataUrl;
+  } catch {
+    throw new HeicConversionError(`Não foi possível converter ${file.name}. Tente enviar a foto como JPEG.`);
+  } finally {
+    toast.dismiss(toastId);
+  }
+}
 
 /**
  * Upload / reorder / delete a list of images. Bound to products or to the
@@ -53,12 +78,12 @@ export function ImageManager({ images, title = "Fotos", actions, onChanged, rend
     for (const [i, file] of list.entries()) {
       setProgress({ done: i + 1, total: list.length });
       try {
-        const dataUrl = await readAsDataUrl(file);
-        await actions.add(await compressImage(dataUrl));
+        await actions.add(await prepareUpload(file));
       } catch (e) {
         failed++;
-        // Server messages are specific (HEIC guidance, size cap, unsupported format).
-        toast.error(e instanceof TRPCClientError ? e.message : `Não foi possível enviar ${file.name}.`);
+        // Server messages are specific (size cap, unsupported format); so is the HEIC one.
+        const specific = e instanceof TRPCClientError || e instanceof HeicConversionError;
+        toast.error(specific ? e.message : `Não foi possível enviar ${file.name}.`);
       }
     }
     await onChanged();
