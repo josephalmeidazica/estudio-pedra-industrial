@@ -55,10 +55,14 @@ npm run build
 
 ## 4. Configure `.env`
 ```bash
-printf 'ADMIN_PASSWORD=%s\nNODE_ENV=production\nPORT=3000\n' \
+printf 'ADMIN_PASSWORD=%s\nSITE_URL=https://<domain>\nNODE_ENV=production\nPORT=3000\n' \
   "$(node -e "console.log(require('crypto').randomBytes(24).toString('hex'))")" > .env
 cat .env    # copy ADMIN_PASSWORD — log in at /admin to manage products and photos
 ```
+Replace `<domain>` with the real one (no trailing slash). `SITE_URL` is what
+link previews, the sitemap and robots.txt use for absolute URLs; without it
+the server falls back to each request's host and logs a warning.
+
 The server **refuses to start in production without `ADMIN_PASSWORD`**. On
 first start the app creates `.data/app.db` (seeded with 9 products, their
 photos converted to WebP variants) and `.data/uploads/`. **`.data/` is your
@@ -114,6 +118,23 @@ account; any rclone backend works (Backblaze B2: storage `b2`). The script
 keeps 7 local archives and prunes remote ones older than 30 days.
 
 **Check:** `rclone ls eps-backup:eps-backups` lists the archive.
+
+## 7b. Check a preview and tell Google
+Every page already ships its own title, description, share image and
+`https://<domain>/sitemap.xml`; this step just confirms it from outside.
+1. Send a piece's link (`https://<domain>/catalogo/<slug>`) to yourself on
+   WhatsApp: the card should show the piece's photo and name. If an old blank
+   card shows, force a refresh at https://developers.facebook.com/tools/debug/
+   or https://www.opengraph.xyz/ and send the link again.
+2. Google Search Console (https://search.google.com/search-console): add the
+   domain as a property (verify through the Cloudflare DNS record it offers),
+   then *Sitemaps* → submit `sitemap.xml`. Indexing takes days to weeks.
+3. Optional: a Google Business Profile for the studio (address can stay
+   hidden; the WhatsApp number and the site link matter).
+
+**Check:** `curl -s https://<domain>/catalogo/<slug> | grep -c "og:image"`
+prints `1`, and `curl -s https://<domain>/sitemap.xml | grep -c "<loc>"` is
+3 plus the number of published pieces.
 
 ## 8. Test your restore once
 ```bash

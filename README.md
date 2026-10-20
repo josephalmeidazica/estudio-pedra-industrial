@@ -28,6 +28,7 @@ npm run check            # TypeScript type-check
 npm test                 # run the test suite
 npm run db:generate      # generate a Drizzle migration after editing server/db/schema.ts
 npm run images:reprocess # convert pre-pipeline image rows into WebP variants (after build)
+npm run og:image         # regenerate client/public/og-default.jpg from the logo
 ```
 
 Deployment: [`DEPLOY.md`](./DEPLOY.md) (cheat-sheet) and [`VPS-SETUP.md`](./VPS-SETUP.md)
@@ -123,7 +124,21 @@ The server exposes three tRPC routers, consumed by the client via `client/src/li
   - `add` / `update` (caption, related product) / `delete` / `reorder` — admin.
 
 Plain HTTP: `GET /healthz` returns `200 {"ok":true}` after a trivial database query
-(used by pm2/Caddy/uptime checks); `GET /uploads/<file>` serves photos.
+(used by pm2/Caddy/uptime checks); `GET /uploads/<file>` serves photos;
+`GET /og/<uuid>.jpg` serves a JPEG share-card version of an uploaded photo (derived
+once from its largest WebP variant, because WhatsApp's preview scraper is unreliable
+with WebP); `GET /sitemap.xml` and `GET /robots.txt` are generated from the catalog.
+
+### Link previews and search (SEO)
+
+Every public URL is answered with a server-rendered `<head>`: title, description,
+canonical, Open Graph and Twitter tags (the piece's cover photo on product pages,
+`client/public/og-default.jpg` elsewhere) and JSON-LD (`LocalBusiness` on the home
+page, `BreadcrumbList` on pieces). Unknown routes and unpublished pieces answer
+`404` with `noindex`; `/admin` is `noindex`. The strings live in `shared/seo-text.ts`
+and the client reuses them for `document.title` after in-app navigation. Absolute
+URLs come from `SITE_URL` in `.env` (falls back to the request host). Regenerate the
+default share image after a logo change with `npm run og:image`.
 
 ## Notes
 
