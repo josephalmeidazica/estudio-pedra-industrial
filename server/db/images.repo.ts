@@ -39,6 +39,22 @@ export async function addImage(
   return row;
 }
 
+/** Rows stored before the variant pipeline: a single file, no intrinsic size. */
+export async function listLegacy(db: DB): Promise<ProductImage[]> {
+  return db.select().from(productImages).where(eq(productImages.width, 0));
+}
+
+export async function setProcessed(
+  db: DB,
+  imageId: number,
+  p: { url: string; width: number; height: number; variants: Record<string, string> }
+): Promise<void> {
+  await db
+    .update(productImages)
+    .set({ url: p.url, width: p.width, height: p.height, variants: p.variants })
+    .where(eq(productImages.id, imageId));
+}
+
 export async function deleteImage(db: DB, imageId: number): Promise<string | null> {
   const rows = await db
     .select({ url: productImages.url })
