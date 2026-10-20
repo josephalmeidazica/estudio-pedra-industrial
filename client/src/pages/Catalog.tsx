@@ -144,8 +144,8 @@ export default function Catalog() {
 
                   {/* Actions */}
                   <div className="flex flex-col gap-2">
-                    <QuoteButton productName={product.name} />
-                    <AddToCartButton name={product.name} />
+                    <QuoteButton product={product} />
+                    <AddToCartButton product={product} />
                   </div>
                 </div>
               </div>
