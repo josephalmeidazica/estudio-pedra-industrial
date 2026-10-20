@@ -1,12 +1,13 @@
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq, isNull } from "drizzle-orm";
 import type { DB } from "./client";
 import { productImages, type ProductImage } from "./schema";
 
+/** A product's images, excluding ones in the Lixeira. */
 export async function listForProduct(db: DB, productId: number): Promise<ProductImage[]> {
   return db
     .select()
     .from(productImages)
-    .where(eq(productImages.productId, productId))
+    .where(and(eq(productImages.productId, productId), isNull(productImages.deletedAt)))
     .orderBy(asc(productImages.sortOrder));
 }
 
