@@ -1,8 +1,10 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import sharp from "sharp";
 import { afterEach, beforeEach, expect, test } from "vitest";
 import { createDb, type DB } from "../db/client";
+import { HEIC_MESSAGE } from "../lib/imagePipeline";
 import { appRouter } from "./index";
 import type { TrpcContext } from "../trpc";
 
@@ -22,13 +24,24 @@ function freshDb(): DB {
   openDbs.push(db);
   return db;
 }
-beforeEach(() => { process.env.ADMIN_PASSWORD = "test-token"; process.env.UPLOADS_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "eps-rtup-")); });
+beforeEach(() => {
+  process.env.ADMIN_PASSWORD = "test-token";
+  process.env.UPLOADS_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "eps-rtup-"));
+});
 afterEach(() => {
   // Close the underlying better-sqlite3 handle first — on Windows, rmSync
   // can't remove a directory whose db/wal/shm files are still open.
   while (openDbs.length) openDbs.pop()!.$client.close();
   while (dirs.length) fs.rmSync(dirs.pop()!, { recursive: true, force: true });
 });
+
+async function pngDataUrl(w: number, h: number) {
+  const buf = await sharp({ create: { width: w, height: h, channels: 3, background: "#000" } })
+    .png()
+    .toBuffer();
+  return "data:image/png;base64," + buf.toString("base64");
+}
+const uploads = () => (fs.existsSync(process.env.UPLOADS_DIR!) ? fs.readdirSync(process.env.UPLOADS_DIR!) : []);
 
 test("public list works without a token; admin create requires one", async () => {
   const db = freshDb();
@@ -49,14 +62,39 @@ test("products.update/delete on a bogus id rejects with NOT_FOUND", async () => 
   await expect(admin.products.delete({ id: 9999 })).rejects.toMatchObject({ code: "NOT_FOUND" });
 });
 
-test("images.add rejects invalid data URLs", async () => {
+test("images.add processes uploads into webp variants", async () => {
   const db = freshDb();
   const admin = appRouter.createCaller(ctxFor(db, "test-token"));
   const p = await admin.products.create({ name: "P" });
   await expect(admin.images.add({ productId: p.id, dataUrl: "nope" })).rejects.toMatchObject({ code: "BAD_REQUEST" });
-  const img = await admin.images.add({
-    productId: p.id,
-    dataUrl: "data:image/png;base64," + Buffer.from("x").toString("base64"),
-  });
-  expect(img.url).toMatch(/^\/uploads\/.+\.png$/);
+  const img = await admin.images.add({ productId: p.id, dataUrl: await pngDataUrl(1000, 500) });
+  expect(img.url).toMatch(/^\/uploads\/[0-9a-f-]{36}-1000\.webp$/);
+  expect([img.width, img.height]).toEqual([1000, 500]);
+  expect(Object.keys(img.variants)).toEqual(["480", "960", "1000"]);
+  expect(uploads()).toHaveLength(3);
+});
+
+test("images.add rejects HEIC with the Portuguese guidance and stores nothing", async () => {
+  const db = freshDb();
+  const admin = appRouter.createCaller(ctxFor(db, "test-token"));
+  const p = await admin.products.create({ name: "P" });
+  const heic = Buffer.concat([Buffer.from([0, 0, 0, 24]), Buffer.from("ftypheic"), Buffer.alloc(12)]);
+  await expect(
+    admin.images.add({ productId: p.id, dataUrl: "data:image/heic;base64," + heic.toString("base64") })
+  ).rejects.toMatchObject({ code: "BAD_REQUEST", message: HEIC_MESSAGE });
+  expect(uploads()).toEqual([]);
+  expect((await admin.products.listAll())[0].images).toEqual([]);
+});
+
+test("images.delete and products.delete remove every variant file", async () => {
+  const db = freshDb();
+  const admin = appRouter.createCaller(ctxFor(db, "test-token"));
+  const p = await admin.products.create({ name: "P" });
+  const a = await admin.images.add({ productId: p.id, dataUrl: await pngDataUrl(1000, 500) });
+  await admin.images.add({ productId: p.id, dataUrl: await pngDataUrl(600, 600) });
+  expect(uploads()).toHaveLength(5);
+  await admin.images.delete({ imageId: a.id });
+  expect(uploads()).toHaveLength(2);
+  await admin.products.delete({ id: p.id });
+  expect(uploads()).toHaveLength(0);
 });
