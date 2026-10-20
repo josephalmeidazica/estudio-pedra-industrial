@@ -1,8 +1,11 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Layout } from "@/components/layout/Layout";
+import { usePageTitle } from "@/lib/usePageTitle";
+import { titles } from "@shared/seo-text";
 
 export default function NotFound() {
+  usePageTitle(titles.notFound());
   return (
     <Layout>
       <section className="py-32 md:py-48 bg-background">

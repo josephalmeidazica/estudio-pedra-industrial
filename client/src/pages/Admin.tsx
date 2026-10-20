@@ -16,6 +16,8 @@ import {
 import type { AdminProduct } from "@/lib/types";
 import { thumbUrl } from "@/lib/imageSrcSet";
 import { trpc } from "@/lib/trpc";
+import { usePageTitle } from "@/lib/usePageTitle";
+import { titles } from "@shared/seo-text";
 import { ProductDialog } from "@/components/admin/ProductDialog";
 import { AmbientesTab } from "@/components/admin/AmbientesTab";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -23,6 +25,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 const TOKEN_KEY = "eps_admin_token";
 
 export default function Admin() {
+  usePageTitle(titles.admin());
   const utils = trpc.useUtils();
   const [token, setToken] = useState<string | null>(
     typeof localStorage !== "undefined" ? localStorage.getItem(TOKEN_KEY) : null

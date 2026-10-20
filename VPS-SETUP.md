@@ -141,12 +141,18 @@ log in to the `/admin` panel, where you manage products and their photos),
 tells the app to run in production mode, and sets the port.
 
 ```bash
-printf 'ADMIN_PASSWORD=%s\nNODE_ENV=production\nPORT=3000\n' \
+printf 'ADMIN_PASSWORD=%s\nSITE_URL=https://<domain>\nNODE_ENV=production\nPORT=3000\n' \
   "$(node -e "console.log(require('crypto').randomBytes(24).toString('hex'))")" > .env
 cat .env    # copy the ADMIN_PASSWORD somewhere safe
 ```
+Replace `<domain>` with the real domain from step 0, without a trailing slash.
 
 Notes:
+- **`SITE_URL`** is the public address the server writes into link previews
+  (the card WhatsApp and Instagram show when someone shares a piece), the
+  sitemap and robots.txt. Without it the server uses each request's host and
+  logs a warning at start; previews still work, but through the proxy the
+  host could be wrong, so set it.
 - **Reads and the WhatsApp buttons need no token** — it only gates writes
   (product/image management).
 - **In production the server refuses to start without `ADMIN_PASSWORD`**, so a
@@ -281,6 +287,43 @@ folder `eps-backups` appears in the Google Drive web UI.
 
 ---
 
+## 7b. Check a link preview and tell Google
+
+**What this does:** confirms from the outside what the server already does
+for every page: a title, a description, a share image (the piece's cover
+photo on product pages, the logo card elsewhere) and a sitemap at
+`https://<domain>/sitemap.xml`, all generated from the catalog, so nothing
+needs updating when the owner adds pieces.
+
+**7b.1 The WhatsApp card.** Open a piece on the site, copy its address
+(`https://<domain>/catalogo/<slug>`) and send it to yourself on WhatsApp. The
+card should show the photo and "Nome da peça — Estúdio Pedra Industrial".
+WhatsApp and Facebook cache cards aggressively: if you had sent the link
+before this deploy and still see a blank card, paste the URL into
+https://developers.facebook.com/tools/debug/ and click *Scrape again* (or use
+https://www.opengraph.xyz/), then send it once more.
+
+**7b.2 Google Search Console.** At https://search.google.com/search-console
+add the domain as a *Domain* property. Google asks for a DNS TXT record:
+add it in Cloudflare → DNS → Records (type TXT, name `@`, the value Google
+shows) and click *Verify*. Then open *Sitemaps* in the left menu, type
+`sitemap.xml` and submit. Pages appear in Google over days to weeks; the
+*Pages* report shows which URLs were indexed.
+
+**7b.3 Optional: Google Business Profile.** A free profile
+(https://business.google.com) puts the studio on Maps and in the local pack
+for searches like "móveis sob medida Belo Horizonte". The address can stay
+hidden (service-area business); add the WhatsApp number and the site link.
+
+**Check:**
+```bash
+curl -s https://<domain>/catalogo/<slug> | grep -c 'property="og:image"'   # prints 1
+curl -s https://<domain>/sitemap.xml | grep -c "<loc>"            # 3 + number of published pieces
+curl -s -o /dev/null -w "%{http_code}\n" https://<domain>/nao-existe   # 404
+```
+
+---
+
 ## 8. Test your restore once
 
 **What this does:** proves the backup is usable *before* you need it.
@@ -379,6 +422,7 @@ curl -s localhost:3000/healthz    # app + database alive?
 | Health check | `curl -s localhost:3000/healthz` |
 | Update to latest | `bash deploy/deploy.sh` |
 | Convert pre-pipeline photos (once) | `npm run images:reprocess` |
+| Check a share card / the sitemap | Step 7b |
 | Back up data now | `bash deploy/backup.sh /var/backups/eps` |
 | Restore from a backup | `bash deploy/restore.sh /var/backups/eps/<file>.tgz` |
 | View logs | `pm2 logs eps` |
