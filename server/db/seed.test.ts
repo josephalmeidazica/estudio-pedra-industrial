@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { afterEach, expect, test } from "vitest";
+import { afterEach, beforeEach, expect, test } from "vitest";
 import { createDb, type DB } from "./client";
 import * as repo from "./products.repo";
 import { ensureProductImages, seedIfEmpty } from "./seed";
@@ -15,6 +15,9 @@ function freshDb(): DB {
   openDbs.push(db);
   return db;
 }
+beforeEach(() => {
+  process.env.UPLOADS_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "eps-seedup-"));
+});
 afterEach(() => {
   // Close the underlying better-sqlite3 handle first — on Windows, rmSync
   // can't remove a directory whose db/wal/shm files are still open.
@@ -33,14 +36,17 @@ test("seeds 9 products once and is idempotent", async () => {
   expect(await repo.listPublished(db)).toHaveLength(9);
 });
 
-test("ensureProductImages attaches one default image per product, idempotently", async () => {
+test("ensureProductImages attaches one processed default image per product, idempotently", async () => {
   const db = freshDb();
   await seedIfEmpty(db);
   await ensureProductImages(db);
 
   const first = await repo.getBySlug(db, "mesa-urb");
   expect(first?.images).toHaveLength(1);
-  expect(first!.images[0].url).toBe("/products/mesa-urb.jpg");
+  const img = first!.images[0];
+  expect(img.url).toMatch(/^\/uploads\/[0-9a-f-]{36}-1080\.webp$/); // mesa-urb.jpg is 1080x1301
+  expect([img.width, img.height]).toEqual([1080, 1301]);
+  expect(Object.keys(img.variants)).toEqual(["480", "960", "1080"]);
 
   // idempotent: running again adds no duplicates
   await ensureProductImages(db);
@@ -51,6 +57,10 @@ test("ensureProductImages attaches one default image per product, idempotently",
   const all = await repo.listAll(db);
   expect(all).toHaveLength(9);
   for (const p of all) expect(p.images).toHaveLength(1);
+
+  const byKeys = (slug: string) => Object.keys(all.find((p) => p.slug === slug)!.images[0].variants);
+  expect(byKeys("mesa-office-l")).toEqual(["480", "960", "1600"]); // 1600x1600
+  expect(byKeys("projetos-personalizados")).toEqual(["480", "780"]); // 780x500
 });
 
 test("ensureProductImages does not touch a product that already has an image", async () => {
