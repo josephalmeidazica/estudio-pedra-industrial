@@ -1,4 +1,4 @@
-import { asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, ne } from "drizzle-orm";
 import type { DB } from "./client";
 import {
   productImages,
@@ -40,8 +40,20 @@ export async function listAll(db: DB): Promise<ProductWithImages[]> {
   return attachImages(db, rows);
 }
 
+/** Any product by slug, published or not (admin / internal use). */
 export async function getBySlug(db: DB, slug: string): Promise<ProductWithImages | null> {
   const rows = await db.select().from(products).where(eq(products.slug, slug)).limit(1);
+  if (rows.length === 0) return null;
+  return (await attachImages(db, rows))[0];
+}
+
+/** Public lookup: unpublished products are indistinguishable from missing ones. */
+export async function getPublishedBySlug(db: DB, slug: string): Promise<ProductWithImages | null> {
+  const rows = await db
+    .select()
+    .from(products)
+    .where(and(eq(products.slug, slug), eq(products.published, true)))
+    .limit(1);
   if (rows.length === 0) return null;
   return (await attachImages(db, rows))[0];
 }
@@ -55,6 +67,7 @@ export type CreateProductInput = {
   dimensions?: string;
   price?: number | null;
   featured?: boolean;
+  isCustom?: boolean;
   published?: boolean;
   sortOrder?: number;
 };
@@ -65,10 +78,17 @@ async function allSlugs(db: DB): Promise<Set<string>> {
   return new Set(rows.map((r) => r.slug));
 }
 
+/** `isCustom` is exclusive: at most one product carries it. */
+async function clearCustomExcept(db: DB, keepId: number | null): Promise<void> {
+  const where = keepId === null ? eq(products.isCustom, true) : and(eq(products.isCustom, true), ne(products.id, keepId));
+  await db.update(products).set({ isCustom: false }).where(where);
+}
+
 export async function createProduct(db: DB, input: CreateProductInput): Promise<Product> {
   const existing = await allSlugs(db);
   const base = slugify(input.slug ?? input.name);
   const slug = makeUniqueSlug(base, existing);
+  if (input.isCustom) await clearCustomExcept(db, null);
   const [row] = await db
     .insert(products)
     .values({
@@ -80,6 +100,7 @@ export async function createProduct(db: DB, input: CreateProductInput): Promise<
       dimensions: input.dimensions ?? "",
       price: input.price ?? null,
       featured: input.featured ?? false,
+      isCustom: input.isCustom ?? false,
       published: input.published ?? true,
       sortOrder: input.sortOrder ?? 0,
     })
@@ -95,7 +116,7 @@ export async function updateProduct(
   const values: Record<string, unknown> = { updatedAt: new Date() };
   const fields = [
     "name", "description", "category", "materials",
-    "dimensions", "price", "featured", "published", "sortOrder",
+    "dimensions", "price", "featured", "isCustom", "published", "sortOrder",
   ] as const;
   for (const k of fields) if (patch[k] !== undefined) values[k] = patch[k];
   if (patch.slug !== undefined) {
@@ -108,6 +129,7 @@ export async function updateProduct(
     if (current[0]) existing.delete(current[0].slug);
     values.slug = makeUniqueSlug(slugify(patch.slug), existing);
   }
+  if (patch.isCustom === true) await clearCustomExcept(db, id);
   const [row] = await db.update(products).set(values).where(eq(products.id, id)).returning();
   return row;
 }

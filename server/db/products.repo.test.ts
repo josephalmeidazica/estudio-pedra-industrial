@@ -82,3 +82,24 @@ test("reorder sets sortOrder by index", async () => {
   const list = await repo.listPublished(db);
   expect(list.map((p) => p.name)).toEqual(["B", "A"]);
 });
+
+test("isCustom is exclusive: setting it on one product clears it on the others", async () => {
+  const db = freshDb();
+  const a = await repo.createProduct(db, { name: "A", isCustom: true });
+  const b = await repo.createProduct(db, { name: "B" });
+  expect((await repo.getBySlug(db, "a"))!.isCustom).toBe(true);
+  await repo.updateProduct(db, b.id, { isCustom: true });
+  expect((await repo.getBySlug(db, "a"))!.isCustom).toBe(false);
+  expect((await repo.getBySlug(db, "b"))!.isCustom).toBe(true);
+  await repo.updateProduct(db, b.id, { isCustom: false });
+  expect((await repo.listAll(db)).filter((p) => p.isCustom)).toHaveLength(0);
+  void a;
+});
+
+test("getPublishedBySlug hides unpublished products; getBySlug still returns them", async () => {
+  const db = freshDb();
+  await repo.createProduct(db, { name: "Hidden", published: false });
+  expect(await repo.getPublishedBySlug(db, "hidden")).toBeNull();
+  expect((await repo.getBySlug(db, "hidden"))?.name).toBe("Hidden");
+  expect(await repo.getPublishedBySlug(db, "nope")).toBeNull();
+});

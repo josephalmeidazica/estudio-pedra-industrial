@@ -119,3 +119,12 @@ test("images.delete and products.delete remove every variant file", async () => 
   await admin.products.delete({ id: p.id });
   expect(uploads()).toHaveLength(0);
 });
+
+test("public getBySlug returns null for unpublished products", async () => {
+  const db = freshDb();
+  const admin = appRouter.createCaller(ctxFor(db, "test-token"));
+  const anon = appRouter.createCaller(ctxFor(db));
+  await admin.products.create({ name: "Draft", published: false, isCustom: true });
+  expect(await anon.products.getBySlug({ slug: "draft" })).toBeNull();
+  expect((await admin.products.listAll())[0].isCustom).toBe(true);
+});

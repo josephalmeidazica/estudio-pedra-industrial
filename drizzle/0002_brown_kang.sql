@@ -1,0 +1,1 @@
+ALTER TABLE `products` ADD `isCustom` integer DEFAULT false NOT NULL;

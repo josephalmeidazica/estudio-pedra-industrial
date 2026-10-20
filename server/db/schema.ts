@@ -11,6 +11,9 @@ export const products = sqliteTable("products", {
   dimensions: text("dimensions").notNull().default(""),
   price: real("price"),
   featured: integer("featured", { mode: "boolean" }).notNull().default(false),
+  // The "Móvel personalizado" entry: adding it asks for a description. At most
+  // one product has it (the repo clears the others when setting it).
+  isCustom: integer("isCustom", { mode: "boolean" }).notNull().default(false),
   sortOrder: integer("sortOrder").notNull().default(0),
   published: integer("published", { mode: "boolean" }).notNull().default(true),
   createdAt: integer("createdAt", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
