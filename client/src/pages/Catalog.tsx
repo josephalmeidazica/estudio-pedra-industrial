@@ -5,13 +5,24 @@
 */
 
 import { ArrowLeft } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Layout } from "@/components/layout/Layout";
+import { CategoryChips } from "@/components/catalog/CategoryChips";
 import { ProductCard } from "@/components/catalog/ProductCard";
+import { extractCategories, filterByCategory } from "@/lib/catalogFilter";
 
 export default function Catalog() {
   const { data: products = [] } = trpc.products.list.useQuery();
+  const search = useSearch();
+  const [, setLocation] = useLocation();
+  const active = new URLSearchParams(search).get("categoria");
+  const categories = extractCategories(products);
+  const visible = filterByCategory(products, active);
+  const activeKnown = active !== null && categories.some((c) => c.slug === active) ? active : null;
+
+  const onCategory = (slug: string | null) =>
+    setLocation(slug ? `/catalogo?categoria=${slug}` : "/catalogo", { replace: true });
 
   return (
     <Layout showCart>
@@ -39,10 +50,15 @@ export default function Catalog() {
       </section>
 
       {/* Products Grid */}
-      <section className="py-32 bg-background">
+      <section className="py-16 md:py-32 bg-background">
         <div className="container">
+          {categories.length > 0 && (
+            <div className="mb-12">
+              <CategoryChips categories={categories} active={activeKnown} onChange={onCategory} />
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
-            {products.map((product) => (
+            {visible.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
