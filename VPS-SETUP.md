@@ -317,7 +317,7 @@ hidden (service-area business); add the WhatsApp number and the site link.
 
 **Check:**
 ```bash
-curl -s https://<domain>/catalogo/<slug> | grep -c "og:image"     # prints 1
+curl -s https://<domain>/catalogo/<slug> | grep -c 'property="og:image"'   # prints 1
 curl -s https://<domain>/sitemap.xml | grep -c "<loc>"            # 3 + number of published pieces
 curl -s -o /dev/null -w "%{http_code}\n" https://<domain>/nao-existe   # 404
 ```

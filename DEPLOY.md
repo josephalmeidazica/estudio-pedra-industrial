@@ -132,7 +132,7 @@ Every page already ships its own title, description, share image and
 3. Optional: a Google Business Profile for the studio (address can stay
    hidden; the WhatsApp number and the site link matter).
 
-**Check:** `curl -s https://<domain>/catalogo/<slug> | grep -c "og:image"`
+**Check:** `curl -s https://<domain>/catalogo/<slug> | grep -c 'property="og:image"'`
 prints `1`, and `curl -s https://<domain>/sitemap.xml | grep -c "<loc>"` is
 3 plus the number of published pieces.
 
