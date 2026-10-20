@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-20
 **Project:** Estúdio Pedra Industrial
-**Status:** Draft; builder check pending
+**Status:** Builder-checked (corrections folded in as the implementer's rulings; see ledger/PR); approved by the owner
 **Builds on:** Batch 1 (PR #6) and Batch 2 (PR #7, branch `feat/batch2-quote-flow`).
 
 ## 1. Intent and why
@@ -95,12 +95,15 @@ Nothing here changes what a visitor sees inside the site.
   - `siteUrlFor(req): string` — `SITE_URL` (trailing slash stripped) or
     `${req.protocol}://${req.get("host")}`.
 - Express integration: `createApp(db)` gains `GET /sitemap.xml`,
-  `GET /robots.txt`, and exports a `renderPage(req, template)` helper that
-  both `setupVite` and `serveStatic` call to produce the final HTML and
-  status. `serveStatic` reads `dist/public/index.html` once at boot and
-  injects per request instead of `sendFile`. Responses carry
-  `Cache-Control: no-cache` for HTML (previews must reflect edits), and
-  `public, max-age=3600` for the sitemap and robots.
+  `GET /robots.txt` and `GET /og/:uuid.jpg`. A separate page handler
+  (`createPageHandler(db, { template, transform })`) is mounted last by
+  `index.ts`; `setupVite` only mounts Vite's middlewares and hands back its
+  HTML transform, `serveStatic` mounts `express.static(dist, { index:
+  false })` (today's default `index.html` would otherwise answer `GET /`
+  un-injected) and `/index.html` redirects to `/`. The production template
+  is read once at boot. Responses carry `Cache-Control: no-cache` for HTML
+  (previews must reflect edits), `public, max-age=3600` for the sitemap and
+  robots, `public, max-age=86400` for `/og/*.jpg`.
 - Database lookups per request: product by slug (`getPublishedBySlug`),
   categories for `?categoria=` (from `listPublished`). SQLite in-process;
   no caching layer.
@@ -115,7 +118,7 @@ Site name `Estúdio Pedra Industrial`. Default description:
 | `/` | `Estúdio Pedra Industrial — Móveis industriais sob medida em Belo Horizonte` | default | `/` | default | index | 200 |
 | `/catalogo` | `Portfólio — Estúdio Pedra Industrial` | `Mesas, estantes, luminárias e peças sob medida em aço carbono e MDF. Veja o portfólio e peça um orçamento pelo WhatsApp.` | `/catalogo` | default | index | 200 |
 | `/catalogo?categoria=<slug>` (known) | `<Categoria> — Portfólio \| Estúdio Pedra Industrial` | `Peças da categoria <Categoria> em aço carbono e MDF, sob medida. Peça um orçamento pelo WhatsApp.` | `/catalogo` (filters are not separate pages) | default | index | 200 |
-| `/catalogo/<slug>` published | `<Nome> — Estúdio Pedra Industrial` | first sentence of the product description, then ` Materiais: <materiais>.` when set, then ` Sob medida em Belo Horizonte. Peça um orçamento pelo WhatsApp.`; trimmed to 160 chars at a word boundary with `…` | `/catalogo/<slug>` | cover photo: largest variant, intrinsic size; default image when no photo | index | 200 |
+| `/catalogo/<slug>` published | `<Nome> — Estúdio Pedra Industrial` | first sentence of the product description, then ` Materiais: <materiais>.` when set, then ` Sob medida em Belo Horizonte. Peça um orçamento pelo WhatsApp.`; trimmed to 160 chars at a word boundary with `…` | `/catalogo/<slug>` | cover photo as a **JPEG** served at `/og/<uuid>.jpg` (derived on demand from the largest WebP variant, ≤ 1200 px wide, cached under `.data/uploads/og/`), dimensions scaled from the row's intrinsic size; legacy rows (no variants) use their `url` as-is without dimensions; default image when no photo | index | 200 |
 | `/catalogo/<slug>` unpublished or missing | `Página não encontrada — Estúdio Pedra Industrial` | default | none | default | noindex, nofollow | 404 |
 | `/contato` | `Contato — Estúdio Pedra Industrial` | `Fale com o Estúdio Pedra Industrial pelo WhatsApp ou Instagram. Atendimento em Belo Horizonte.` | `/contato` | default | index | 200 |
 | `/admin` | `Administração` | none | none | none | noindex, nofollow | 200 |
@@ -126,8 +129,16 @@ Tags emitted for every indexable page: `<title>`, `meta description`,
 piece), `og:site_name`, `og:locale` `pt_BR`, `og:title`, `og:description`,
 `og:url`, `og:image`, `og:image:width`, `og:image:height`, `og:image:alt`,
 `twitter:card` `summary_large_image`, `twitter:title`,
-`twitter:description`, `twitter:image`, and `meta theme-color` `#d2b389`.
-All URLs absolute (site URL + path). Text is HTML-escaped.
+`twitter:description`, `twitter:image`. No `theme-color` (it would tint
+phone browser chrome, a visible change). All URLs absolute (site URL +
+path). Text is HTML-escaped.
+
+**Why JPEG for the cover (my call, after the builder check):** WhatsApp's
+preview scraper is unreliable with WebP and with images over roughly
+300 KB, and the preview card is this batch's first goal. The image
+pipeline itself is unchanged; a small `GET /og/:uuid.jpg` route converts
+the largest variant once and caches it. The "Móvel personalizado" entry is
+treated like any other piece (own page, sitemap entry).
 
 ### 4.3 Default share image **(my call)**
 
@@ -149,11 +160,11 @@ All URLs absolute (site URL + path). Text is HTML-escaped.
   `sameAs` `["https://instagram.com/estudio.pedraindustrial"]`,
   `openingHoursSpecification` from the footer (Mon–Fri 08:00–18:00, Sat
   09:00–12:00), `description` default.
-- Product page: `Product` with `name`, `description` (same as meta),
-  `image` (all variants' largest URL per photo, absolute), `category`,
-  `material` (when set), `brand` `{ @type: "Brand", name: "Estúdio Pedra
-  Industrial" }`, `url`; **no `offers`**. Plus `BreadcrumbList`:
-  Início → Portfólio → `<Nome>`.
+- Product page: `BreadcrumbList` only (Início → Portfólio → `<Nome>`).
+  **My call after the builder check:** Google requires `offers`, `review`
+  or `aggregateRating` on `Product` markup; without a price every piece
+  would show as an error in Search Console, which the owner will be asked
+  to open. `og:type` stays `product` for the preview card.
 - Catalog and contact: no JSON-LD beyond what the head carries.
 - Emitted as `<script type="application/ld+json">` with `</` escaped.
 
@@ -203,10 +214,11 @@ All URLs absolute (site URL + path). Text is HTML-escaped.
 ## 5. Acceptance
 
 1. `curl -s <host>/catalogo/mesa-urb | head -40` shows the product title,
-   description, canonical, `og:image` pointing at the cover's largest
-   WebP with its width/height, `og:type` `product`, and two JSON-LD
-   blocks (`Product`, `BreadcrumbList`). With `SITE_URL` set, every
-   absolute URL uses it; without it, they use the request host.
+   description, canonical, `og:image` pointing at `/og/<uuid>.jpg` with
+   its width/height, `og:type` `product`, and a `BreadcrumbList` JSON-LD
+   block; `curl -sI <host>/og/<uuid>.jpg` returns `image/jpeg`. With
+   `SITE_URL` set, every absolute URL uses it; without it, they use the
+   request host.
 2. `curl -s -o /dev/null -w "%{http_code}" <host>/catalogo/nao-existe`
    prints `404`, and the body contains `noindex`. Same for an unpublished
    product's slug and for `/qualquer-coisa`. `/admin` returns 200 with
@@ -224,10 +236,11 @@ All URLs absolute (site URL + path). Text is HTML-escaped.
 7. `client/public/og-default.jpg` exists at 1200×630 and is what `/` and
    `/catalogo` reference.
 8. `npm run check` and `npm test` pass; `resolveRoute`, `buildHead`
-   (every row of the 4.2 table, the 160-char trim, escaping), `injectHead`
-   (marker present / missing), `renderSitemap`, `renderRobots` and the
-   Express integration (`GET` a product page, a 404, the sitemap, robots
-   through `createApp()`) have tests.
+   (every row of the 4.2 table, the 160-char trim, escaping, legacy rows),
+   `injectHead` (marker present / missing), `renderSitemap`,
+   `renderRobots`, the OG-image path/dimension helpers and the Express
+   integration (`GET` a product page, a 404, the sitemap, robots, an
+   `/og/*.jpg` through `createApp()` + the page handler) have tests.
 9. `.env.example`, `DEPLOY.md`, `VPS-SETUP.md`, `README.md` updated.
 
 ## 6. Left to the builder

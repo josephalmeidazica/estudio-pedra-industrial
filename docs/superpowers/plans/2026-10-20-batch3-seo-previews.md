@@ -14,7 +14,8 @@
 
 - Branch `feat/batch3-seo-previews`, stacked on `feat/batch2-quote-flow` (PR #7). Commits `feat(seo): …` / `docs: …` / `chore: …`.
 - No visible page changes. Head tags, two text endpoints, one default image.
-- Copy is exactly the spec's §4.2 table and §4.4 lists (reproduced in Task 1/2 tests). `og:locale` `pt_BR`; `theme-color` `#d2b389`; site name `Estúdio Pedra Industrial`.
+- Copy is exactly the spec's §4.2 table and §4.4 lists (reproduced in Task 1/2 tests). `og:locale` `pt_BR`; no `theme-color`; site name `Estúdio Pedra Industrial`.
+- Product `og:image` is `/og/<uuid>.jpg` (JPEG derived from the largest WebP variant, ≤ 1200 px wide, cached in `<uploads>/og/`); legacy rows use their `url` without dimensions. Product pages emit `BreadcrumbList` only (no `Product` JSON-LD).
 - Absolute URLs from `SITE_URL` (trailing slash stripped) or `${req.protocol}://${req.get("host")}`.
 - 404 status + `noindex, nofollow` for unknown routes and unpublished/missing slugs; `/admin` 200 + `noindex, nofollow`.
 - HTML responses `Cache-Control: no-cache`; sitemap/robots `public, max-age=3600`.
@@ -98,7 +99,9 @@ Note the first product case: the source sentence has no final period, so one is 
 **Interfaces:**
 - `type Route = { kind: "home" } | { kind: "catalog"; category: string | null } | { kind: "product"; slug: string } | { kind: "contact" } | { kind: "admin" } | { kind: "unknown" }`
 - `resolveRoute(pathname: string, search: string): Route` — strips a trailing slash (except `/`), percent-decodes the slug, reads `categoria` from `search`.
-- `type HeadImage = { url: string; width: number; height: number; alt: string }`
+- `type HeadImage = { url: string; width?: number; height?: number; alt: string }`
+- `ogImagePathFor(url: string): string | null` — `/uploads/<uuid>-<w>.webp` → `/og/<uuid>.jpg`; anything else → `null` (use the url as-is).
+- `ogDimensions(width: number, height: number): { width: number; height: number } | null` — scaled so width ≤ 1200 (height rounded); `null` when either is 0.
 - `type HeadData = { title: string; description: string | null; canonical: string | null; robots: "index, follow" | "noindex, nofollow"; ogType: "website" | "product"; image: HeadImage | null; url: string; jsonLd: object[]; status: 200 | 404 }`
 - `type ProductForHead = { name: string; slug: string; description: string; category: string; materials: string; images: { url: string; width: number; height: number }[] }`
 - `buildHead(args: { route: Route; siteUrl: string; path: string; product?: ProductForHead | null; categoryLabel?: string | null }): HeadData` — `product` is the published row or `null` when missing; `categoryLabel` is the label for a known `categoria` slug, `null`/undefined for unknown (treated as plain catalog).
@@ -126,17 +129,23 @@ test("resolveRoute", () => {
   expect(resolveRoute("/catalogo/a/b", "")).toEqual({ kind: "unknown" });
 });
 
-test("product head: title, description, canonical, cover image, product JSON-LD + breadcrumb", () => {
+test("product head: title, description, canonical, JPEG cover, breadcrumb only", () => {
   const h = buildHead({ route: { kind: "product", slug: "mesa-urb" }, siteUrl: site, path: "/catalogo/mesa-urb", product: mesa });
   expect(h.status).toBe(200);
   expect(h.title).toBe("Mesa Urb — Estúdio Pedra Industrial");
   expect(h.canonical).toBe("https://example.com.br/catalogo/mesa-urb");
   expect(h.ogType).toBe("product");
-  expect(h.image).toEqual({ url: "https://example.com.br/uploads/a-1080.webp", width: 1080, height: 1301, alt: "Mesa Urb" });
-  const types = h.jsonLd.map((j: any) => j["@type"]);
-  expect(types).toEqual(["Product", "BreadcrumbList"]);
-  expect((h.jsonLd[0] as any).offers).toBeUndefined();
-  expect((h.jsonLd[0] as any).image).toEqual(["https://example.com.br/uploads/a-1080.webp"]);
+  expect(h.image).toEqual({ url: "https://example.com.br/og/a.jpg", width: 1080, height: 1301, alt: "Mesa Urb" });
+  expect(h.jsonLd.map((j: any) => j["@type"])).toEqual(["BreadcrumbList"]);
+  // wide covers are scaled to 1200 for the preview card
+  const wide = buildHead({ route: { kind: "product", slug: "w" }, siteUrl: site, path: "/catalogo/w", product: { ...mesa, images: [{ url: "/uploads/b-1600.webp", width: 1600, height: 1067 }] } });
+  expect([wide.image?.width, wide.image?.height, wide.image?.url]).toEqual([1200, 800, "https://example.com.br/og/b.jpg"]);
+  // legacy rows: url as-is, no dimensions
+  const legacy = buildHead({ route: { kind: "product", slug: "l" }, siteUrl: site, path: "/catalogo/l", product: { ...mesa, images: [{ url: "/uploads/old.jpg", width: 0, height: 0 }] } });
+  expect(legacy.image).toEqual({ url: "https://example.com.br/uploads/old.jpg", alt: "Mesa Urb" });
+  expect(ogImagePathFor("/uploads/0f1e2d3c-1111-2222-3333-444455556666-960.webp")).toBe("/og/0f1e2d3c-1111-2222-3333-444455556666.jpg");
+  expect(ogImagePathFor("/products/x.jpg")).toBeNull();
+  expect(ogDimensions(0, 0)).toBeNull();
 });
 
 test("missing or unpublished product, unknown route and admin", () => {
@@ -171,7 +180,7 @@ test("renderHeadHtml escapes owner text in attributes and JSON-LD", () => {
   expect(html).not.toContain("</script><script>alert");
   expect(html).toContain('\\u003c/script');
   expect(html).toContain('<meta property="og:locale" content="pt_BR">');
-  expect(html).toContain('<meta name="theme-color" content="#d2b389">');
+  expect(html).not.toContain("theme-color");
   expect(html).toContain('<meta name="twitter:card" content="summary_large_image">');
 });
 
@@ -198,7 +207,7 @@ test("sitemap, robots, normalizeSiteUrl", () => {
 ```
 
 - [ ] **Step 2: Run** `npx vitest run server/lib/seo.test.ts` → FAIL (module missing).
-- [ ] **Step 3: Implement** `server/lib/seo.ts` using `shared/seo-text.ts`. JSON-LD per spec §4.4 (LocalBusiness fields: name, url, image, telephone `+55 31 97180-3551`, address, areaServed, sameAs Instagram, openingHoursSpecification Mon–Fri 08:00–18:00 and Sat 09:00–12:00, description).
+- [ ] **Step 3: Implement** `server/lib/seo.ts` using `shared/seo-text.ts`. JSON-LD per spec §4.4 (LocalBusiness fields: name, url, image, telephone `+55 31 97180-3551`, address, areaServed, sameAs Instagram, openingHoursSpecification Mon–Fri 08:00–18:00 and Sat 09:00–12:00, description; product pages: `BreadcrumbList` only).
 - [ ] **Step 4: Run** `npx vitest run server/lib && npm run check` → PASS; clean.
 - [ ] **Step 5: Commit** `feat(seo): pure head/sitemap/robots rendering`.
 
@@ -226,7 +235,7 @@ test("sitemap, robots, normalizeSiteUrl", () => {
 - `client/index.html`: `<!--app-head-->` immediately before `</head>`.
 - `siteUrlFor(req: Request): string` (in `server/page.ts`): `normalizeSiteUrl(process.env.SITE_URL)` when set, else `${req.protocol}://${req.get("host")}`.
 - `createPageHandler(db: DB, opts: { template: () => Promise<string>; transform?: (url: string, html: string) => Promise<string> }): RequestHandler` — resolves the route from `req.path`/`req.originalUrl` query; loads `getPublishedBySlug` for products and `listPublished` → `extractCategories`-equivalent label lookup for `categoria` (server-side helper `categoryLabelFor(products, slug)` using `shared/slug`); builds head; `html = injectHead(await transform?.(url, template) ?? template, renderHeadHtml(head))`; responds `res.status(head.status).set({ "Content-Type": "text/html", "Cache-Control": "no-cache" }).send(html)`.
-- `createApp(db)`: `GET /sitemap.xml` (entries: `/`, `/catalogo`, `/contato`, then published products with `lastmod: updatedAt`; `Content-Type: application/xml; charset=utf-8`, `Cache-Control: public, max-age=3600`) and `GET /robots.txt` (`text/plain`, same cache header).
+- `createApp(db)`: `GET /sitemap.xml` (entries: `/`, `/catalogo`, `/contato`, then published products with `lastmod: updatedAt`; `Content-Type: application/xml; charset=utf-8`, `Cache-Control: public, max-age=3600`), `GET /robots.txt` (`text/plain`, same cache header), `GET /index.html` → `301 /`, and `GET /og/:uuid.jpg` → `ensureOgJpeg(uuid)` (new `server/lib/ogImage.ts`: finds `<uploads>/<uuid>-<largest>.webp`, writes `<uploads>/og/<uuid>.jpg` once via sharp `resize({ width: 1200, withoutEnlargement: true }).jpeg({ quality: 80 })`, returns the path or `null`) served with `image/jpeg` and `Cache-Control: public, max-age=86400`, 404 when no variant exists.
 - `setupVite(app, server): Promise<{ transform(url, html): Promise<string> }>` — mounts `vite.middlewares`, returns `vite.transformIndexHtml` bound; no catch-all any more. `serveStatic(app): void` — mounts `express.static(distPath, { index: false })`; no catch-all.
 - `server/index.ts`: after app creation and dev/prod static mounting, `app.use("*", createPageHandler(db, { template, transform }))` where `template` reads `client/index.html` per request in dev and `dist/public/index.html` once (cached) in prod.
 - `assertProductionConfig`: additionally `console.warn` when `NODE_ENV === "production"` and `SITE_URL` is unset (message: `SITE_URL is not set; link previews will use the request host. Set it in .env.`).
@@ -248,7 +257,9 @@ async function serve(db: DB) {
 test("product page head, 404s, sitemap and robots", async () => {
   const db = freshDb();
   const p = await prods.createProduct(db, { name: "Mesa Urb", description: "Mesa urbana em aço.", category: "Mesas" });
-  await images.addImage(db, { productId: p.id, url: "/uploads/a-1080.webp", width: 1080, height: 1301, variants: { "1080": "/uploads/a-1080.webp" } });
+  // a real cover through the pipeline so /og/<uuid>.jpg has a WebP to derive from
+  const processed = await processImage(await sharp({ create: { width: 1000, height: 700, channels: 3, background: "#333" } }).png().toBuffer());
+  await images.addImage(db, { productId: p.id, ...processed });
   await prods.createProduct(db, { name: "Rascunho", published: false });
   const { server, get } = await serve(db);
   try {
@@ -257,9 +268,16 @@ test("product page head, 404s, sitemap and robots", async () => {
     expect(page.headers.get("cache-control")).toBe("no-cache");
     const html = await page.text();
     expect(html).toContain("<title>Mesa Urb — Estúdio Pedra Industrial</title>");
-    expect(html).toContain('<meta property="og:image" content="http://127.0.0.1:');
-    expect(html).toContain('"@type":"Product"');
+    expect(html).toMatch(/<meta property="og:image" content="http:\/\/127\.0\.0\.1:\d+\/og\/[0-9a-f-]{36}\.jpg">/);
+    expect(html).toContain('"@type":"BreadcrumbList"');
     expect(html).not.toContain("<title>Old</title>");
+
+    const ogUrl = html.match(/og:image" content="([^"]+)"/)![1];
+    const og = await fetch(ogUrl);
+    expect(og.status).toBe(200);
+    expect(og.headers.get("content-type")).toContain("image/jpeg");
+    expect(await (await get("/og/00000000-0000-0000-0000-000000000000.jpg")).status).toBe(404);
+    expect((await get("/index.html")).redirected || (await fetch(`http://127.0.0.1:${port}/index.html`, { redirect: "manual" })).status === 301).toBe(true);
 
     expect((await get("/catalogo/rascunho")).status).toBe(404);
     const missing = await get("/nao-existe");
