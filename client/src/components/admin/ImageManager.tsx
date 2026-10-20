@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { TRPCClientError } from "@trpc/client";
 import { ChevronLeft, ChevronRight, Star, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { compressImage } from "@/lib/imageCompress";
@@ -25,16 +26,11 @@ export function ImageManager({ productId, images }: { productId: number; images:
         r.onload = (e) => res(e.target?.result as string);
         r.readAsDataURL(file);
       });
-      let compressed = await compressImage(dataUrl, 0.6);
       try {
-        await addImage.mutateAsync({ productId, dataUrl: compressed });
-      } catch {
-        compressed = await compressImage(dataUrl, 0.3);
-        try {
-          await addImage.mutateAsync({ productId, dataUrl: compressed });
-        } catch {
-          alert("Erro ao enviar imagem. Tente uma imagem menor.");
-        }
+        await addImage.mutateAsync({ productId, dataUrl: await compressImage(dataUrl) });
+      } catch (e) {
+        // Server messages are specific (HEIC guidance, size cap, unsupported format).
+        alert(e instanceof TRPCClientError ? e.message : "Erro ao enviar imagem. Tente uma imagem menor.");
       }
     }
     await refresh();
