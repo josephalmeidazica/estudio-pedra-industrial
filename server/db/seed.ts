@@ -5,7 +5,7 @@ import type { DB } from "./client";
 import { processImage } from "../lib/imagePipeline";
 import { products, productImages } from "./schema";
 
-const SEED: { slug: string; name: string; description: string; category: string }[] = [
+const SEED: { slug: string; name: string; description: string; category: string; isCustom?: boolean }[] = [
   { slug: "estrutura-gaia", name: "Estrutura Gaia", description: "Estrutura modular que se adapta a qualquer espaço", category: "Estruturas" },
   { slug: "estante-divisio", name: "Estante Divisio", description: "Estante modular em aço carbono e MDF que divide espaços com elegância", category: "Estantes" },
   { slug: "luminaria-lua", name: "Luminária Lua", description: "Luminária artesanal que traz a serenidade da lua para seus ambientes", category: "Luminárias" },
@@ -14,8 +14,11 @@ const SEED: { slug: string; name: string; description: string; category: string 
   { slug: "mesa-office-l", name: "Mesa Office L", description: "Mesa de escritório em formato L, perfeita para home office", category: "Mesas" },
   { slug: "mesa-urb", name: "Mesa Urb", description: "Mesa urbana em aço carbono com design contemporâneo", category: "Mesas" },
   { slug: "penteadeira-glam", name: "Penteadeira Glam", description: "Penteadeira sofisticada que combina funcionalidade e elegância", category: "Penteadeiras" },
-  { slug: "projetos-personalizados", name: "Projetos Personalizados", description: "Crie seu próprio móvel sob medida com nossa equipe", category: "Personalizados" },
+  { slug: "movel-personalizado", name: "Móvel personalizado", description: "Não achou o que procura? Descreva o móvel dos seus sonhos e fazemos sob medida.", category: "Personalizados", isCustom: true },
 ];
+
+const CUSTOM = SEED[SEED.length - 1];
+const LEGACY_CUSTOM_SLUG = "projetos-personalizados";
 
 export async function seedIfEmpty(db: DB): Promise<void> {
   const existing = await db.select({ id: products.id }).from(products).limit(1);
@@ -30,10 +33,28 @@ export async function seedIfEmpty(db: DB): Promise<void> {
       dimensions: "",
       price: null,
       featured: false,
+      isCustom: p.isCustom ?? false,
       published: true,
       sortOrder: i,
     }))
   );
+}
+
+/**
+ * One-time conversion for databases seeded before the custom piece existed:
+ * if nothing is marked `isCustom` and the old "Projetos Personalizados" row
+ * is still there, turn it into "Móvel personalizado". Never inserts, so an
+ * owner who removed the custom piece on purpose is respected.
+ */
+export async function ensureCustomProduct(db: DB): Promise<void> {
+  const custom = await db.select({ id: products.id }).from(products).where(eq(products.isCustom, true)).limit(1);
+  if (custom.length > 0) return;
+  const legacy = await db.select({ id: products.id }).from(products).where(eq(products.slug, LEGACY_CUSTOM_SLUG)).limit(1);
+  if (legacy.length === 0) return;
+  await db
+    .update(products)
+    .set({ slug: CUSTOM.slug, name: CUSTOM.name, description: CUSTOM.description, isCustom: true, updatedAt: new Date() })
+    .where(eq(products.id, legacy[0].id));
 }
 
 /** Default photo file (under client/public/products/) per seeded slug. */

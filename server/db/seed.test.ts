@@ -4,7 +4,7 @@ import path from "node:path";
 import { afterEach, beforeEach, expect, test } from "vitest";
 import { createDb, type DB } from "./client";
 import * as repo from "./products.repo";
-import { ensureProductImages, seedIfEmpty } from "./seed";
+import { ensureCustomProduct, ensureProductImages, seedIfEmpty } from "./seed";
 
 const dirs: string[] = [];
 const openDbs: DB[] = [];
@@ -60,7 +60,29 @@ test("ensureProductImages attaches one processed default image per product, idem
 
   const byKeys = (slug: string) => Object.keys(all.find((p) => p.slug === slug)!.images[0].variants);
   expect(byKeys("mesa-office-l")).toEqual(["480", "960", "1600"]); // 1600x1600
-  expect(byKeys("projetos-personalizados")).toEqual(["480", "780"]); // 780x500
+  expect(byKeys("movel-personalizado")).toEqual(["480", "780"]); // 780x500
+});
+
+test("seed includes the custom piece", async () => {
+  const db = freshDb();
+  await seedIfEmpty(db);
+  const custom = (await repo.listPublished(db)).filter((p) => p.isCustom);
+  expect(custom.map((p) => p.slug)).toEqual(["movel-personalizado"]);
+  await ensureProductImages(db);
+  expect((await repo.getBySlug(db, "movel-personalizado"))!.images[0].url).toMatch(/-780\.webp$/); // 780x500 file
+});
+
+test("ensureCustomProduct converts a legacy 'projetos-personalizados' row once and never inserts", async () => {
+  const db = freshDb();
+  await repo.createProduct(db, { name: "Projetos Personalizados", slug: "projetos-personalizados" });
+  await ensureCustomProduct(db);
+  const after = await repo.getBySlug(db, "movel-personalizado");
+  expect([after!.name, after!.isCustom]).toEqual(["Móvel personalizado", true]);
+  expect(await repo.getBySlug(db, "projetos-personalizados")).toBeNull();
+  await repo.updateProduct(db, after!.id, { isCustom: false });
+  await ensureCustomProduct(db);
+  expect((await repo.listAll(db)).filter((p) => p.isCustom)).toHaveLength(0);
+  expect(await repo.listAll(db)).toHaveLength(1);
 });
 
 test("ensureProductImages does not touch a product that already has an image", async () => {

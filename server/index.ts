@@ -2,7 +2,7 @@ import "dotenv/config";
 import { createServer } from "http";
 import { createApp } from "./app";
 import { db } from "./db/client";
-import { ensureProductImages, seedIfEmpty } from "./db/seed";
+import { ensureCustomProduct, ensureProductImages, seedIfEmpty } from "./db/seed";
 import { assertProductionConfig } from "./lib/config";
 import { serveStatic, setupVite } from "./vite";
 
@@ -10,6 +10,7 @@ async function startServer() {
   assertProductionConfig(process.env);
 
   await seedIfEmpty(db);
+  await ensureCustomProduct(db);
   await ensureProductImages(db);
 
   const app = createApp(db);
