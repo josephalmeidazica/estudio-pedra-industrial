@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { CartWidget } from "@/components/cart/CartWidget";
+import { WhatsAppFab } from "@/components/WhatsAppFab";
 import { SiteFooter } from "./SiteFooter";
 import { SiteHeader } from "./SiteHeader";
 
@@ -9,6 +10,7 @@ export function Layout({ children, showCart = false }: { children: ReactNode; sh
     <div className="min-h-screen bg-background">
       <SiteHeader rightSlot={showCart ? <CartWidget /> : undefined} />
       {children}
+      <WhatsAppFab />
       <SiteFooter />
     </div>
   );
