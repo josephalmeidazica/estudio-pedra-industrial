@@ -10,13 +10,18 @@ import { ArrowRight, Hammer, Leaf, Truck, Award, Sparkles, Target, Heart } from 
 import { Layout } from "@/components/layout/Layout";
 import { WHATSAPP_LINK } from "@/lib/whatsapp";
 import { Link } from "wouter";
+import { ProductCard } from "@/components/catalog/ProductCard";
+import { selectFeatured } from "@/lib/featured";
+import { trpc } from "@/lib/trpc";
 
 export default function Home() {
+  const { data: products = [] } = trpc.products.list.useQuery();
+  const featured = selectFeatured(products);
   return (
-    <Layout>
+    <Layout showCart>
 
       {/* Hero Section */}
-      <section className="py-32 md:py-48 bg-background">
+      <section className="py-16 md:py-24 bg-background">
         <div className="container">
 
           <div className="flex flex-col md:flex-row items-center gap-12 mb-12">
@@ -58,6 +63,37 @@ Nossa criatividade está em unir estética industrial, funcionalidade e inovaç�
           </div>
         </div>
       </section>
+
+      {/* Destaques */}
+      {featured.length > 0 && (
+        <section className="py-20 bg-background border-t border-border">
+          <div className="container">
+            <div className="mb-12">
+              <div className="inline-block mb-6 px-4 py-1 border border-foreground/30 rounded">
+                <span className="text-accent-mono text-foreground text-xs">PORTFÓLIO</span>
+              </div>
+              <h2 className="text-5xl sm:text-6xl md:text-7xl heading-display text-foreground">
+                Destaques
+              </h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
+              {featured.map((p) => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </div>
+            <div className="mt-12 text-center">
+              <Link href="/catalogo">
+                <Button
+                  variant="outline"
+                  className="border border-foreground/30 hover:border-foreground hover:bg-foreground/5 text-foreground heading-secondary text-sm px-8 py-3 rounded transition-all duration-300"
+                >
+                  Ver portfólio completo
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Features Section */}
       <section className="py-20 bg-card">
