@@ -119,3 +119,27 @@ test("images.delete and products.delete remove every variant file", async () => 
   await admin.products.delete({ id: p.id });
   expect(uploads()).toHaveLength(0);
 });
+
+test("public getBySlug returns null for unpublished products", async () => {
+  const db = freshDb();
+  const admin = appRouter.createCaller(ctxFor(db, "test-token"));
+  const anon = appRouter.createCaller(ctxFor(db));
+  await admin.products.create({ name: "Draft", published: false, isCustom: true });
+  expect(await anon.products.getBySlug({ slug: "draft" })).toBeNull();
+  expect((await admin.products.listAll())[0].isCustom).toBe(true);
+});
+
+test("gallery router: public list, admin add/update/delete with variant cleanup", async () => {
+  const db = freshDb();
+  const admin = appRouter.createCaller(ctxFor(db, "test-token"));
+  const anon = appRouter.createCaller(ctxFor(db));
+  await expect(anon.gallery.add({ dataUrl: await pngDataUrl(600, 750) })).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+  const g = await admin.gallery.add({ dataUrl: await pngDataUrl(600, 750), caption: "Sala" });
+  expect(Object.keys(g.variants)).toEqual(["480", "600"]);
+  expect((await anon.gallery.list())[0].caption).toBe("Sala");
+  await admin.gallery.update({ id: g.id, caption: "Cozinha", productId: null });
+  expect((await anon.gallery.list())[0].caption).toBe("Cozinha");
+  await expect(admin.gallery.update({ id: 9999, caption: "x" })).rejects.toMatchObject({ code: "NOT_FOUND" });
+  await admin.gallery.delete({ id: g.id });
+  expect(uploads()).toEqual([]);
+});

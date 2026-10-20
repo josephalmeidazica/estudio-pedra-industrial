@@ -25,7 +25,17 @@ export function createDb(dbPath: string): DB {
   return db;
 }
 
-const DEFAULT_DB_PATH =
-  process.env.DATABASE_PATH ?? path.join(PROJECT_ROOT, ".data", "app.db");
+let instance: DB | null = null;
 
-export const db = createDb(DEFAULT_DB_PATH);
+/**
+ * The application database, opened (and migrated) on first use rather than
+ * at import time. Tests import this module for `createDb` from several
+ * vitest workers at once; an import-time singleton made them all migrate the
+ * shared `.data/app.db` concurrently and race on `CREATE TABLE`.
+ */
+export function getDb(): DB {
+  if (!instance) {
+    instance = createDb(process.env.DATABASE_PATH ?? path.join(PROJECT_ROOT, ".data", "app.db"));
+  }
+  return instance;
+}

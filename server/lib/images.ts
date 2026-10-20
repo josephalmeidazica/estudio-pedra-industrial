@@ -56,4 +56,5 @@ export function deleteImageByUrl(url: string): void {
     return;
   }
   for (const f of entries) if (f.startsWith(`${m[1]}-`) && f.endsWith(".webp")) rm(f);
+  rm(path.join("og", `${m[1]}.jpg`)); // the derived share-card JPEG, if it was ever requested
 }

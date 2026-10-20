@@ -11,6 +11,9 @@ export const products = sqliteTable("products", {
   dimensions: text("dimensions").notNull().default(""),
   price: real("price"),
   featured: integer("featured", { mode: "boolean" }).notNull().default(false),
+  // The "Móvel personalizado" entry: adding it asks for a description. At most
+  // one product has it (the repo clears the others when setting it).
+  isCustom: integer("isCustom", { mode: "boolean" }).notNull().default(false),
   sortOrder: integer("sortOrder").notNull().default(0),
   published: integer("published", { mode: "boolean" }).notNull().default(true),
   createdAt: integer("createdAt", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
@@ -36,6 +39,24 @@ export const productImages = sqliteTable("product_images", {
   createdAt: integer("createdAt", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
 });
 
+/** Photos of pieces installed in clients' homes ("Ambientes"), shown on the home page. */
+export const galleryImages = sqliteTable("gallery_images", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  url: text("url").notNull(),
+  caption: text("caption").notNull().default(""),
+  // Optional link to the piece in the photo; cleared if that product is deleted.
+  productId: integer("productId").references(() => products.id, { onDelete: "set null" }),
+  sortOrder: integer("sortOrder").notNull().default(0),
+  width: integer("width").notNull().default(0),
+  height: integer("height").notNull().default(0),
+  variants: text("variants", { mode: "json" })
+    .$type<Record<string, string>>()
+    .notNull()
+    .default(sql`'{}'`),
+  createdAt: integer("createdAt", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+});
+
+export type GalleryImage = typeof galleryImages.$inferSelect;
 export type Product = typeof products.$inferSelect;
 export type NewProduct = typeof products.$inferInsert;
 export type ProductImage = typeof productImages.$inferSelect;

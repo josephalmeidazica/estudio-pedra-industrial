@@ -15,6 +15,20 @@
       "when": 1792494443152,
       "tag": "0001_ambitious_miss_america",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1792499142199,
+      "tag": "0002_brown_kang",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1792499228219,
+      "tag": "0003_clammy_tony_stark",
+      "breakpoints": true
     }
   ]
 }

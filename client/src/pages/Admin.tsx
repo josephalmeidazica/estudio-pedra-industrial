@@ -16,11 +16,16 @@ import {
 import type { AdminProduct } from "@/lib/types";
 import { thumbUrl } from "@/lib/imageSrcSet";
 import { trpc } from "@/lib/trpc";
+import { usePageTitle } from "@/lib/usePageTitle";
+import { titles } from "@shared/seo-text";
 import { ProductDialog } from "@/components/admin/ProductDialog";
+import { AmbientesTab } from "@/components/admin/AmbientesTab";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const TOKEN_KEY = "eps_admin_token";
 
 export default function Admin() {
+  usePageTitle(titles.admin());
   const utils = trpc.useUtils();
   const [token, setToken] = useState<string | null>(
     typeof localStorage !== "undefined" ? localStorage.getItem(TOKEN_KEY) : null
@@ -103,13 +108,19 @@ export default function Admin() {
   return (
     <div className="mx-auto max-w-4xl p-6">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Produtos</h1>
+        <h1 className="text-xl font-semibold">Administração</h1>
         <div className="flex gap-2">
           <Button onClick={openNew}><Plus className="mr-2 h-4 w-4" />Novo produto</Button>
           <Button variant="ghost" onClick={logout}><LogOut className="mr-2 h-4 w-4" />Sair</Button>
         </div>
       </div>
 
+      <Tabs defaultValue="produtos">
+        <TabsList className="mb-4">
+          <TabsTrigger value="produtos">Produtos</TabsTrigger>
+          <TabsTrigger value="ambientes">Ambientes</TabsTrigger>
+        </TabsList>
+        <TabsContent value="produtos">
       <div className="divide-y rounded-md border">
         {products.map((p, i) => (
           <div key={p.id} className="flex items-center gap-3 p-3">
@@ -133,6 +144,12 @@ export default function Admin() {
         ))}
         {products.length === 0 && <p className="p-6 text-center text-muted-foreground">Nenhum produto.</p>}
       </div>
+
+        </TabsContent>
+        <TabsContent value="ambientes">
+          <AmbientesTab />
+        </TabsContent>
+      </Tabs>
 
       <ProductDialog open={dialogOpen} onOpenChange={setDialogOpen} product={editing} />
 

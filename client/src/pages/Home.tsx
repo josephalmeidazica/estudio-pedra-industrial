@@ -10,16 +10,25 @@ import { ArrowRight, Hammer, Leaf, Truck, Award, Sparkles, Target, Heart } from 
 import { Layout } from "@/components/layout/Layout";
 import { WHATSAPP_LINK } from "@/lib/whatsapp";
 import { Link } from "wouter";
+import { ProductCard } from "@/components/catalog/ProductCard";
+import { AmbientesStrip } from "@/components/home/AmbientesStrip";
+import { selectFeatured } from "@/lib/featured";
+import { trpc } from "@/lib/trpc";
+import { usePageTitle } from "@/lib/usePageTitle";
+import { titles } from "@shared/seo-text";
 
 export default function Home() {
+  usePageTitle(titles.home());
+  const { data: products = [] } = trpc.products.list.useQuery();
+  const featured = selectFeatured(products);
   return (
-    <Layout>
+    <Layout showCart>
 
       {/* Hero Section */}
-      <section className="py-32 md:py-48 bg-background">
+      <section className="py-16 md:py-24 bg-background">
         <div className="container">
 
-          <div className="flex flex-col md:flex-row items-center gap-12 mb-12">
+          <div className="flex flex-col md:flex-row items-center gap-12 mb-6 md:mb-12">
             <div className="flex-1">
               <h1 className="text-4xl sm:text-5xl md:text-6xl heading-display text-foreground mb-8 leading-tight">
                 Móveis industriais personalizados
@@ -33,7 +42,7 @@ export default function Home() {
               />
             </div>
           </div>
-          <p className="text-lg text-muted-foreground max-w-2xl mb-12 leading-relaxed">
+          <p className="text-lg text-muted-foreground max-w-2xl mb-8 md:mb-12 leading-relaxed line-clamp-3 md:line-clamp-none">
             Aqui, a criatividade guia cada detalhe. Exploramos materiais, formas e processos de maneira autoral, transformando ideias em soluções sob medida. 
 
 Nossa criatividade está em unir estética industrial, funcionalidade e inovação em cada projeto.
@@ -59,6 +68,37 @@ Nossa criatividade está em unir estética industrial, funcionalidade e inovaç�
         </div>
       </section>
 
+      {/* Destaques */}
+      {featured.length > 0 && (
+        <section className="py-10 md:py-20 bg-background border-t border-border">
+          <div className="container">
+            <div className="mb-8 md:mb-12">
+              <div className="inline-block mb-4 md:mb-6 px-4 py-1 border border-foreground/30 rounded">
+                <span className="text-accent-mono text-foreground text-xs">PORTFÓLIO</span>
+              </div>
+              <h2 className="text-5xl sm:text-6xl md:text-7xl heading-display text-foreground">
+                Destaques
+              </h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
+              {featured.map((p) => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </div>
+            <div className="mt-12 text-center">
+              <Link href="/catalogo">
+                <Button
+                  variant="outline"
+                  className="border border-foreground/30 hover:border-foreground hover:bg-foreground/5 text-foreground heading-secondary text-sm px-8 py-3 rounded transition-all duration-300"
+                >
+                  Ver portfólio completo
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Features Section */}
       <section className="py-20 bg-card">
         <div className="container">
@@ -80,6 +120,8 @@ Nossa criatividade está em unir estética industrial, funcionalidade e inovaç�
           </div>
         </div>
       </section>
+
+      <AmbientesStrip />
 
       {/* Services Section */}
       <section id="servicos" className="py-32 bg-background">

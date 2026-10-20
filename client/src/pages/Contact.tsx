@@ -8,8 +8,11 @@ import { MessageCircle, Instagram } from "lucide-react";
 import { Link } from "wouter";
 import { Layout } from "@/components/layout/Layout";
 import { WHATSAPP_LINK } from "@/lib/whatsapp";
+import { usePageTitle } from "@/lib/usePageTitle";
+import { titles } from "@shared/seo-text";
 
 export default function Contact() {
+  usePageTitle(titles.contact());
   return (
     <Layout>
 

@@ -13,6 +13,7 @@ const createInput = z.object({
   dimensions: z.string().optional(),
   price: z.number().nullable().optional(),
   featured: z.boolean().optional(),
+  isCustom: z.boolean().optional(),
   published: z.boolean().optional(),
   sortOrder: z.number().int().optional(),
 });
@@ -20,9 +21,10 @@ const createInput = z.object({
 export const productsRouter = router({
   list: publicProcedure.query(({ ctx }) => repo.listPublished(ctx.db)),
   listAll: adminProcedure.query(({ ctx }) => repo.listAll(ctx.db)),
+  // Public: drafts must look exactly like missing products.
   getBySlug: publicProcedure
     .input(z.object({ slug: z.string() }))
-    .query(({ ctx, input }) => repo.getBySlug(ctx.db, input.slug)),
+    .query(({ ctx, input }) => repo.getPublishedBySlug(ctx.db, input.slug)),
   create: adminProcedure
     .input(createInput)
     .mutation(({ ctx, input }) => repo.createProduct(ctx.db, input)),

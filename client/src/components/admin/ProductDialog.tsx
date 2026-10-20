@@ -31,6 +31,7 @@ const empty = {
   dimensions: "",
   price: "",
   featured: false,
+  isCustom: false,
   published: true,
 };
 
@@ -39,6 +40,10 @@ export function ProductDialog({ open, onOpenChange, product }: Props) {
   const create = trpc.products.create.useMutation();
   const update = trpc.products.update.useMutation();
   const del = trpc.products.delete.useMutation();
+  const addImage = trpc.images.add.useMutation();
+  const delImage = trpc.images.delete.useMutation();
+  const reorderImages = trpc.images.reorder.useMutation();
+  const setCover = trpc.images.setCover.useMutation();
   const [form, setForm] = useState(empty);
   const [currentId, setCurrentId] = useState<number | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -54,6 +59,7 @@ export function ProductDialog({ open, onOpenChange, product }: Props) {
         dimensions: product.dimensions,
         price: product.price == null ? "" : String(product.price),
         featured: product.featured,
+        isCustom: product.isCustom,
         published: product.published,
       });
       setCurrentId(product.id);
@@ -89,6 +95,7 @@ export function ProductDialog({ open, onOpenChange, product }: Props) {
       dimensions: form.dimensions,
       price: price,
       featured: form.featured,
+      isCustom: form.isCustom,
       published: form.published,
       ...(form.slug.trim() ? { slug: form.slug.trim() } : {}),
     };
@@ -167,11 +174,23 @@ export function ProductDialog({ open, onOpenChange, product }: Props) {
             <label className="flex items-center gap-2 text-sm">
               <Switch checked={form.published} onCheckedChange={(v) => set("published", v)} /> Publicado
             </label>
+            <label className="flex items-center gap-2 text-sm">
+              <Switch checked={form.isCustom} onCheckedChange={(v) => set("isCustom", v)} /> Personalizado
+            </label>
           </div>
 
           {currentId != null && (
             <div className="border-t pt-3">
-              <ImageManager productId={currentId} images={currentImages} />
+              <ImageManager
+                images={currentImages}
+                actions={{
+                  add: (dataUrl) => addImage.mutateAsync({ productId: currentId, dataUrl }),
+                  remove: (imageId) => delImage.mutateAsync({ imageId }),
+                  reorder: (orderedIds) => reorderImages.mutateAsync({ productId: currentId, orderedIds }),
+                  setCover: (imageId) => setCover.mutateAsync({ imageId }),
+                }}
+                onChanged={() => utils.products.listAll.invalidate()}
+              />
             </div>
           )}
         </div>

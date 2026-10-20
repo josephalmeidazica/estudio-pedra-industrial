@@ -3,7 +3,7 @@
 Product images under `client/public/products/`.
 
 ## Studio's own photos (from `assets/`)
-- mesa-urb, estrutura-gaia, estante-divisio, luminaria-lua, projetos-personalizados
+- mesa-urb, estrutura-gaia, estante-divisio, luminaria-lua, movel-personalizado
 
 ## Royalty-free (free-to-use license)
 - luminaria-sol.jpg — https://unsplash.com/photos/black-and-brown-pendant-lamp-nPdrPYeShk4 (Unsplash License — free to use, no attribution required)

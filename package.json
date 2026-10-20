@@ -15,7 +15,8 @@
     "format": "prettier --write .",
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
-    "images:reprocess": "node dist/scripts/reprocess-images.js"
+    "images:reprocess": "node dist/scripts/reprocess-images.js",
+    "og:image": "tsx scripts/make-og-image.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
