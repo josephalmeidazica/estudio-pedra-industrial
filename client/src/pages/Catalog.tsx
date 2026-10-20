@@ -10,6 +10,7 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Layout } from "@/components/layout/Layout";
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
+import { QuoteButton } from "@/components/catalog/QuoteButton";
 
 export default function Catalog() {
   const { data: products = [] } = trpc.products.list.useQuery();
@@ -136,8 +137,11 @@ export default function Catalog() {
                     </span>
                   ) : null}
 
-                  {/* Add to Cart Button */}
-                  <AddToCartButton name={product.name} />
+                  {/* Actions */}
+                  <div className="flex flex-col gap-2">
+                    <QuoteButton productName={product.name} />
+                    <AddToCartButton name={product.name} />
+                  </div>
                 </div>
               </div>
             ))}
