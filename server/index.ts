@@ -4,7 +4,8 @@ import { createApp } from "./app";
 import { getDb } from "./db/client";
 import { ensureCustomProduct, ensureProductImages, seedIfEmpty } from "./db/seed";
 import { assertProductionConfig } from "./lib/config";
-import { serveStatic, setupVite } from "./vite";
+import { createPageHandler } from "./page";
+import { devTemplate, prodTemplate, serveStatic, setupVite, type HtmlTransform } from "./vite";
 
 async function startServer() {
   assertProductionConfig(process.env);
@@ -17,12 +18,17 @@ async function startServer() {
   const app = createApp(db);
   const server = createServer(app);
 
-  // The client is a catch-all, so it mounts after /uploads, /healthz and /api.
+  // Static client first, then the HTML catch-all that renders the per-URL head.
+  let template: () => Promise<string>;
+  let transform: HtmlTransform | undefined;
   if (process.env.NODE_ENV === "production") {
     serveStatic(app);
+    template = await prodTemplate();
   } else {
-    await setupVite(app, server);
+    ({ transform } = await setupVite(app, server));
+    template = devTemplate;
   }
+  app.use("*", createPageHandler(db, { template, transform }));
 
   if (!process.env.ADMIN_PASSWORD) {
     console.warn("[auth] ADMIN_PASSWORD is not set — write endpoints are disabled. Set it in .env.");
