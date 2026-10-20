@@ -11,9 +11,9 @@ import { ResponsiveImage } from "@/components/ResponsiveImage";
 import { hasDimensions, thumbUrl } from "@/lib/imageSrcSet";
 import { relatedProducts } from "@/lib/related";
 import { trpc } from "@/lib/trpc";
+import { usePageTitle } from "@/lib/usePageTitle";
+import { titles } from "@shared/seo-text";
 import NotFound from "./NotFound";
-
-const SITE_TITLE = "Estúdio Pedra Industrial";
 
 export default function Product() {
   const { slug = "" } = useParams<{ slug: string }>();
@@ -28,14 +28,7 @@ export default function Product() {
   }, [slug]);
 
   const name = product.data?.name;
-  useEffect(() => {
-    if (!name) return;
-    const previous = document.title;
-    document.title = `${name} — ${SITE_TITLE}`;
-    return () => {
-      document.title = previous;
-    };
-  }, [name]);
+  usePageTitle(name ? titles.product(name) : undefined);
 
   if (product.isLoading) {
     return (

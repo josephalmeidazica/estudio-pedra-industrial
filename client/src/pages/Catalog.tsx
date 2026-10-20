@@ -11,6 +11,8 @@ import { Layout } from "@/components/layout/Layout";
 import { CategoryChips } from "@/components/catalog/CategoryChips";
 import { ProductCard } from "@/components/catalog/ProductCard";
 import { extractCategories, filterByCategory } from "@/lib/catalogFilter";
+import { usePageTitle } from "@/lib/usePageTitle";
+import { titles } from "@shared/seo-text";
 
 export default function Catalog() {
   const { data: products = [] } = trpc.products.list.useQuery();
@@ -20,6 +22,8 @@ export default function Catalog() {
   const categories = extractCategories(products);
   const visible = filterByCategory(products, active);
   const activeKnown = active !== null && categories.some((c) => c.slug === active) ? active : null;
+  const activeLabel = categories.find((c) => c.slug === activeKnown)?.label;
+  usePageTitle(activeLabel ? titles.category(activeLabel) : titles.catalog());
 
   const onCategory = (slug: string | null) =>
     setLocation(slug ? `/catalogo?categoria=${slug}` : "/catalogo", { replace: true });

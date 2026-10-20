@@ -14,8 +14,11 @@ import { ProductCard } from "@/components/catalog/ProductCard";
 import { AmbientesStrip } from "@/components/home/AmbientesStrip";
 import { selectFeatured } from "@/lib/featured";
 import { trpc } from "@/lib/trpc";
+import { usePageTitle } from "@/lib/usePageTitle";
+import { titles } from "@shared/seo-text";
 
 export default function Home() {
+  usePageTitle(titles.home());
   const { data: products = [] } = trpc.products.list.useQuery();
   const featured = selectFeatured(products);
   return (
