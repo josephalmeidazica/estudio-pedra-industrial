@@ -1,15 +1,15 @@
 # Estúdio Pedra Industrial
 
-Local, self-contained version of the furniture-studio site. Originally scaffolded on
-Manus; all Manus runtime, OAuth, external SDK, CDN, and MySQL dependencies have been
-removed so it runs entirely on your machine.
+Portfolio site for a bespoke furniture studio (carbon steel + MDF). Visitors browse
+finished pieces and request quotes over WhatsApp; the owner manages the catalog at
+`/admin`. Self-contained: one Node process, SQLite, files on disk.
 
 ## Stack
 
 - **Frontend:** React 19 + Vite 7 + Tailwind CSS v4 + wouter (routing) + shadcn/ui
-- **Backend:** Express + tRPC (`products` and `images` routers)
-- **Data:** SQLite (via Drizzle) for product data, plain files on disk for images —
-  no external database or service to install
+- **Backend:** Express + tRPC (`products` and `images` routers), `GET /healthz`
+- **Data:** SQLite (via Drizzle) for product data; product photos as WebP variants on
+  disk (generated with sharp) — no external database or service to install
 
 ## Run
 
@@ -21,34 +21,47 @@ npm run dev     # http://localhost:3000
 Other scripts:
 
 ```bash
-npm run build   # production build -> dist/
-npm start       # serve the production build
-npm run check   # TypeScript type-check
-npm test        # run the test suite
+npm run build            # production build -> dist/ (server, client, maintenance scripts)
+npm start                # serve the production build
+npm run check            # TypeScript type-check
+npm test                 # run the test suite
+npm run db:generate      # generate a Drizzle migration after editing server/db/schema.ts
+npm run images:reprocess # convert pre-pipeline image rows into WebP variants (after build)
 ```
+
+Deployment: [`DEPLOY.md`](./DEPLOY.md) (cheat-sheet) and [`VPS-SETUP.md`](./VPS-SETUP.md)
+(full guide), with helper scripts in [`deploy/`](./deploy) including `backup.sh` and
+`restore.sh`.
 
 ## How it works
 
-- Pages: Home (`/`), Catálogo (`/catalogo`), Contato (`/contato`).
+- Pages: Home (`/`), Catálogo (`/catalogo`), Contato (`/contato`), Admin (`/admin`).
+  The public pages share one header (with a mobile menu), footer and a floating
+  WhatsApp button; every catalog card has a one-tap "Pedir orçamento" WhatsApp link
+  and an "Adicionar ao carrinho" option for multi-item quotes.
 - The catalog page loads its products live from the API. Product data is seeded once
   on first boot (9 products) and then lives in SQLite.
-- The logo lives at `client/public/logo.png` (previously loaded from a Manus CDN).
-
-## Notes
-
-- `assets/*.jpg` at the repo root are the original source photos; they are not wired
-  into the app. You can use them as product images via the catalog's upload button.
+- The WhatsApp number lives in `client/src/config.ts`; the logo in `client/public/logo.png`.
 
 ## Backend / catalog
 
 ### Storage
 
-- Product data lives in a SQLite database at `.data/app.db` (managed with Drizzle).
-- Product images are stored as plain files on disk under `.data/uploads/` and served
-  statically at `/uploads/...`.
-- Both `.data/app.db` and `.data/uploads/` are git-ignored — they're local, per-machine
-  state and are never committed.
-- On first boot, if the database is empty, the server seeds it with 9 starter products.
+- Product data lives in a SQLite database at `.data/app.db` (managed with Drizzle;
+  migrations in `drizzle/` run automatically on boot).
+- Product images are processed on upload by `sharp` into WebP variants at widths
+  480, 960 and 1600 (never upscaled; a narrower photo stops at its own width), stored
+  under `.data/uploads/<uuid>-<width>.webp` and served at `/uploads/...` with a
+  one-year immutable cache header. Each `product_images` row records `width`,
+  `height` and a `variants` map; the client renders `srcset`/`sizes` from it.
+- The nine bundled default photos (`client/public/products/`) go through the same
+  pipeline on first boot. Databases created before the pipeline existed can be
+  converted once with `npm run images:reprocess` (run `npm run build` first).
+- HEIC uploads: iPhone Safari converts them to JPEG in the browser automatically. On
+  browsers that cannot decode HEIC the server rejects the file with guidance to send
+  JPEG instead.
+- `.data/` is git-ignored — it is local, per-machine state. **It is the whole
+  database plus every photo: back it up** (`deploy/backup.sh`).
 
 ### Auth token
 
@@ -63,7 +76,7 @@ products and images) plus the admin read `products.listAll` — requires a beare
    ```
 3. Every request other than `products.list` / `products.getBySlug` must send
    `Authorization: Bearer <token>`. Requests without a valid token are rejected
-   (fail-closed).
+   (fail-closed). In production the server refuses to start if the token is unset.
 
 `.env` is git-ignored; never commit a real token value.
 
@@ -71,25 +84,32 @@ products and images) plus the admin read `products.listAll` — requires a beare
 
 The site has a password-protected admin panel at **`/admin`**. Log in with your
 `ADMIN_PASSWORD` (from `.env`) to manage the full catalog — create/edit/delete/reorder
-products and upload/remove/reorder their images (set a cover). Public visitors just
-browse the catalog and use the cart; no admin controls are shown there.
+products (name, slug, category, materials, dimensions, price, description, featured,
+published) and upload/remove/reorder their images (set a cover). Public visitors just
+browse the catalog and use the WhatsApp buttons; no admin controls are shown there.
 
 ### API (tRPC)
 
 The server exposes two tRPC routers, consumed by the client via `client/src/lib/trpc.ts`:
 
 - **`products`**
-  - `list` — public; active products for the catalog.
+  - `list` — public; published products for the catalog.
   - `getBySlug` — public; a single product by slug.
-  - `listAll` — admin; all products (including inactive), for management.
+  - `listAll` — admin; all products (including drafts), for management.
   - `create` / `update` / `delete` — admin.
   - `reorder` — admin; persists catalog display order.
 - **`images`**
-  - `add` — admin; attach an image (from a data URL) to a product.
-  - `delete` — admin; remove an image.
+  - `add` — admin; attach an image (from a data URL) to a product. Runs the variant
+    pipeline; rejects HEIC, files over 20 MB and undecodable data with a Portuguese message.
+  - `delete` — admin; remove an image and all its variant files.
   - `reorder` — admin; persists image display order for a product.
   - `setCover` — admin; mark an image as the product's cover photo.
 
-Full CRUD for product fields (name, description, price, etc.) is already available
-through the `products` router via the API; a dedicated admin UI for editing those
-fields is a future addition — today the UI only exposes image management.
+Plain HTTP: `GET /healthz` returns `200 {"ok":true}` after a trivial database query
+(used by pm2/Caddy/uptime checks); `GET /uploads/<file>` serves photos.
+
+## Notes
+
+- `assets/*.jpg` at the repo root are the original source photos; they are not wired
+  into the app. You can use them as product images via the admin upload button.
+- Image credits for the bundled default photos: [`CREDITS.md`](./CREDITS.md).

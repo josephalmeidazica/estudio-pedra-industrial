@@ -1,43 +1,74 @@
 # Running Estúdio Pedra Industrial on a VPS — Complete Guide
 
 A step-by-step, explain-everything walkthrough for hosting this site on a
-Hostinger (or any Ubuntu) VPS — from buying the server to a live site, plus
-domain/HTTPS, backups, updates, and troubleshooting.
+Hostinger (or any Ubuntu) VPS — from buying a domain and a server to a live
+HTTPS site with nightly off-box backups, plus updates and troubleshooting.
 
 > `DEPLOY.md` is the condensed cheat-sheet. **This file is the full guide** with
 > explanations. If you just want the commands, skip to each "Commands" block.
+> Every step ends with a **Check**; do not continue until it passes.
 
 ---
 
-## 0. How it works (the mental model)
+## How it works (the mental model)
 
 A VPS is **one Linux computer with a public IP**. Everything runs on that single
-box — no external services:
+box; Cloudflare sits in front of it, and backups leave it nightly:
 
 ```
-Internet ──(DNS)──▶ Caddy (443/HTTPS) ──▶ Node app (localhost:3000, kept alive by pm2)
-                                              ├─ serves the built React site (dist/public)
-                                              ├─ serves the API (/api/trpc)
-                                              ├─ serves uploaded images (/uploads)
-                                              └─ reads/writes  .data/  on local disk
-                                                    ├─ app.db      (SQLite database)
-                                                    └─ uploads/    (photo files)
+Visitor ──▶ Cloudflare (DNS + proxy + edge cache) ──▶ Caddy (443/HTTPS) ──▶ Node app (localhost:3000, kept alive by pm2)
+                                                                              ├─ serves the built React site (dist/public)
+                                                                              ├─ serves the API (/api/trpc) and /healthz
+                                                                              ├─ serves photos (/uploads, WebP variants)
+                                                                              └─ reads/writes  .data/  on local disk
+                                                                                    ├─ app.db      (SQLite database)
+                                                                                    └─ uploads/    (photo files)
+                                                                                          │
+                                                               deploy/backup.sh (cron, 03:00) ──▶ rclone ──▶ Google Drive
 ```
 
 - **The app** is a single Node process. After a build it serves the website, the
-  API, and uploaded images all at once.
+  API, and uploaded images all at once. `GET /healthz` answers `{"ok":true}`
+  after touching the database; everything in this guide uses it as the check.
 - **The database** is a single SQLite file (`.data/app.db`) on the VPS disk — no
   separate database server to run.
-- **Images** you upload are saved as files in `.data/uploads/`.
+- **Images** uploaded by the owner are resized on the server into WebP files at
+  up to three widths and saved in `.data/uploads/`.
 - **pm2** keeps the Node process running (restarts on crash and on reboot).
-- **Caddy** (added when you have a domain) provides HTTPS and forwards traffic to
-  the app.
+- **Caddy** provides HTTPS (free Let's Encrypt certificate) and forwards traffic
+  to the app; it also tells the app the visitor's real IP when Cloudflare is in
+  front.
+- **Cloudflare** hosts the DNS, hides the VPS IP, and caches photos at its São
+  Paulo edge.
 - Everything stateful lives in **`.data/`**, which persists across restarts and
   redeploys — that folder is your whole database + all photos, so it's what you
-  back up.
+  back up and what `deploy/restore.sh` puts back.
 
 Helper scripts in [`deploy/`](./deploy): `ecosystem.config.cjs` (pm2),
-`deploy.sh` (update), `backup.sh` (backup), `Caddyfile` (reverse proxy).
+`deploy.sh` (update), `backup.sh` (backup), `restore.sh` (restore),
+`Caddyfile` (reverse proxy).
+
+---
+
+## 0. Buy a domain
+
+**What this does:** gives the site a name. Cloudflare will host the DNS either
+way, so the only decision is where to register.
+
+- **Want a `.com`?** Buy it at **Cloudflare Registrar**
+  (dash.cloudflare.com → Domain Registration). Cloudflare sells at cost, and
+  the DNS is already there — nothing else to set up.
+- **Want a `.com.br`?** Only **Registro.br** sells those (you need a CPF or
+  CNPJ). After buying:
+  1. Create a free Cloudflare account, **Add a site**, type the domain, pick
+     the Free plan. Cloudflare shows **two nameservers** (`xxx.ns.cloudflare.com`).
+  2. At Registro.br open the domain → *Alterar servidores DNS* and enter those
+     two nameservers. Propagation takes minutes to a few hours.
+
+Don't add DNS records yet; step 6 does that, in a specific order.
+
+**Check:** `dig NS <domain> +short` (or https://dnschecker.org) lists the two
+Cloudflare nameservers.
 
 ---
 
@@ -54,33 +85,22 @@ Helper scripts in [`deploy/`](./deploy): `ecosystem.config.cjs` (pm2),
 6. Finish/pay; wait a few minutes for provisioning.
 7. From the VPS overview, note the **public IP** (e.g. `191.x.x.x`).
 
-> **Note on cost/terms:** a VPS is paid, but unlike free serverless tiers it has
-> no commercial-use restriction, gives you persistent storage, and runs this app
-> with zero code changes.
-
----
-
-## 2. Connect via SSH
-
-Windows 11 has SSH built in (PowerShell / Windows Terminal). macOS/Linux: any
-terminal.
-
+**Connect:** Windows 11 has SSH built in (PowerShell / Windows Terminal).
 ```bash
 ssh root@YOUR_VPS_IP
 ```
-Type `yes` to trust the host the first time, then enter your password. You're in
-when you see a prompt like `root@srv:~#`.
+Type `yes` to trust the host the first time, then enter your password.
 
-*(Optional, recommended) create a non-root user later; for a first deploy, root
-is fine.*
+**Check:** you see a prompt like `root@srv:~#`.
 
 ---
 
-## 3. Install the runtime (run once)
+## 2. Install the runtime (run once)
 
 **What this does:** updates the OS, installs Node.js 22 (the JavaScript runtime),
 `git` (to fetch the code), build tools (a fallback compiler for the `better-sqlite3`
-database module), and `pm2` (the process manager).
+database module), `pm2` (the process manager) and `rclone` (copies backups to
+cloud storage in step 7).
 
 ```bash
 apt update && apt upgrade -y
@@ -88,16 +108,19 @@ apt install -y git build-essential python3
 curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
 apt install -y nodejs
 npm install -g pm2
-node -v      # expect v22.x
+curl https://rclone.org/install.sh | bash
 ```
+
+**Check:** `node -v` prints `v22.x` and `rclone version` prints a version line.
 
 ---
 
-## 4. Get the code, install dependencies, build
+## 3. Get the code, install dependencies, build
 
 **What this does:** downloads the app from GitHub (public repo — no login needed),
-installs its dependencies exactly as locked, and produces the production build
-(`dist/`: the compiled website + bundled server).
+installs its dependencies exactly as locked (including `sharp`, the image
+resizer, which ships a prebuilt Linux binary), and produces the production
+build (`dist/`: the compiled website, the bundled server and a maintenance script).
 
 ```bash
 cd /opt
@@ -107,12 +130,14 @@ npm ci
 npm run build
 ```
 
+**Check:** `ls dist/index.js dist/scripts/reprocess-images.js` lists both files.
+
 ---
 
-## 5. Configure the environment (`.env`)
+## 4. Configure the environment (`.env`)
 
 **What this does:** creates a `.env` file with a secret admin token (used to
-log in to the `/admin` panel, where you manage products and their images),
+log in to the `/admin` panel, where you manage products and their photos),
 tells the app to run in production mode, and sets the port.
 
 ```bash
@@ -122,15 +147,21 @@ cat .env    # copy the ADMIN_PASSWORD somewhere safe
 ```
 
 Notes:
-- **Reads and the shopping cart need no token** — it only gates writes (product/
-  image management).
+- **Reads and the WhatsApp buttons need no token** — it only gates writes
+  (product/image management).
+- **In production the server refuses to start without `ADMIN_PASSWORD`**, so a
+  forgotten token shows up as a clear error in `pm2 logs eps`, not as an open
+  admin panel.
 - `.env` is git-ignored — it's never committed or pushed. Keep the token private.
-- On first start the app creates `.data/app.db` (seeded with 9 starter products)
-  and `.data/uploads/`. **Don't delete `.data/` — it's your database + photos.**
+- On first start the app creates `.data/app.db` (seeded with 9 starter products,
+  whose photos are converted to WebP variants) and `.data/uploads/`.
+  **Don't delete `.data/` — it's your database + photos.**
+
+**Check:** `grep -c ADMIN_PASSWORD .env` prints `1`.
 
 ---
 
-## 6. Start the app with pm2
+## 5. Start the app with pm2
 
 **What this does:** launches the app and keeps it running — restarting it if it
 crashes and after a server reboot.
@@ -140,92 +171,132 @@ pm2 start deploy/ecosystem.config.cjs   # starts the app (cwd pinned to repo roo
 pm2 save                                # remember it for reboots
 pm2 startup systemd                     # prints a command — copy/paste & run it
 ```
-Check it's serving locally on the box:
-```bash
-curl -s "localhost:3000/api/trpc/products.list?input=%7B%7D" | head -c 120
-```
-You should see JSON with the seeded products (including `estrutura-gaia`).
+
+**Check:** `curl -s localhost:3000/healthz` prints `{"ok":true}`.
 
 Useful pm2 commands: `pm2 status`, `pm2 logs eps`, `pm2 restart eps`, `pm2 stop eps`.
 
----
-
-## 7A. Quick test WITHOUT a domain (reach it by IP)
-
-**What this does:** opens the firewall so you can hit the app directly at its IP
-for testing. (No HTTPS yet — that needs a domain, see 7B.)
-
+**Optional — quick look by IP before the domain works:**
 ```bash
 ufw allow OpenSSH      # keep SSH open (do this BEFORE enabling the firewall!)
-ufw allow 3000         # the app's port, for IP testing
+ufw allow 3000
 ufw --force enable
 ```
-Now open in your browser:
-```
-http://YOUR_VPS_IP:3000
-```
-Go to **`/catalogo`** to browse and try the cart. To manage products/photos,
-go to **`/admin`** and log in with your `ADMIN_PASSWORD`.
-
-> This exposes the Node app directly — fine for a test. For a real, public site
-> use a domain + HTTPS (7B), which also lets you close port 3000.
+Then open `http://YOUR_VPS_IP:3000` in a browser. Close the port again after
+step 6 (`ufw delete allow 3000`); the public site goes through Caddy only.
 
 ---
 
-## 7B. Go public WITH a domain + HTTPS (recommended for real use)
+## 6. Go public: Cloudflare + Caddy (HTTPS)
 
 **What this does:** puts **Caddy** in front of the app to provide automatic HTTPS
-(free Let's Encrypt certificate) and a clean `https://yourdomain.com`.
+and a clean `https://<domain>`, then puts **Cloudflare's proxy** in front of
+Caddy for caching and to hide the VPS IP. The order matters: Caddy must obtain
+its certificate *before* the proxy is turned on, because the certificate
+challenge has to reach the VPS directly.
 
-**First, DNS:** at your domain registrar, add an **A record** pointing
-`yourdomain.com` → `YOUR_VPS_IP`. Wait for it to propagate (minutes to an hour).
+**6.1 DNS (proxy off):** in Cloudflare → DNS → Records → **Add record**:
+type `A`, name `@`, IPv4 `YOUR_VPS_IP`, **Proxy status: DNS only (grey cloud)**.
+Add a second `A` record with name `www` the same way if you want `www.` to work.
 
-**Then install & configure Caddy:**
+**6.2 Install & configure Caddy:**
 ```bash
 apt install -y debian-keyring debian-archive-keyring apt-transport-https curl
 curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
 curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list
 apt update && apt install -y caddy
 
-# put your domain into the Caddyfile and install it
 cd /opt/estudio-pedra-industrial
-sed -i 's/example.com/yourdomain.com/' deploy/Caddyfile
+sed -i "s/DOMAIN/<domain>/g" deploy/Caddyfile     # e.g. sed -i "s/DOMAIN/estudiopedra.com.br/g" ...
 cp deploy/Caddyfile /etc/caddy/Caddyfile
 systemctl reload caddy
-```
-The `deploy/Caddyfile` simply says: serve `yourdomain.com` over HTTPS and proxy
-requests to the app on `localhost:3000`. Caddy fetches and renews the TLS
-certificate automatically.
 
-**Adjust the firewall** — allow web traffic and close the direct app port:
-```bash
-ufw allow 80
-ufw allow 443
-ufw delete allow 3000    # no longer expose Node directly; Caddy fronts it
+ufw allow OpenSSH && ufw allow 80 && ufw allow 443 && ufw enable
 ```
-Now visit **`https://yourdomain.com`**.
+What the `deploy/Caddyfile` says: serve `<domain>` over HTTPS and proxy
+requests to the app on `localhost:3000`; cache photos (`/uploads/*`) and built
+assets for a year; add a few security headers; and, because Cloudflare's edge
+will sit in front, trust Cloudflare's IP ranges so the app logs the visitor's
+real IP rather than Cloudflare's. Caddy fetches and renews the TLS certificate
+automatically.
 
-**Optional — Cloudflare (nice in Brazil):** add your domain to a free Cloudflare
-account, point the A record there (proxied), and set SSL mode **Full (strict)**.
-Cloudflare caches your images at its São Paulo edge for faster loads.
+**Check:** `curl -sI https://<domain>/healthz | head -1` prints `HTTP/2 200`.
+If it does not, wait a minute (DNS) and look at `journalctl -u caddy -n 50`.
+
+**6.3 Turn Cloudflare on:** back in Cloudflare:
+1. DNS → the `A` record(s) → click the cloud so it turns **orange (Proxied)**.
+2. **SSL/TLS → Overview → Full (strict)**. Cloudflare now talks HTTPS to Caddy
+   and verifies Caddy's certificate.
+3. **SSL/TLS → Edge Certificates → Always Use HTTPS: on.**
+4. **Caching → Cache Rules → Create rule:** name `uploads`; *When incoming
+   requests match…* **URI Path** *starts with* `/uploads/`; *Then…* **Eligible
+   for cache**, **Edge TTL** → *Ignore cache-control header and use this TTL* →
+   **1 month**. Photos are content-addressed (a new upload gets a new file
+   name), so long caching is safe.
+
+**Check:** `curl -sI https://<domain>/ | grep -i cf-ray` prints a header
+(traffic now flows through Cloudflare) and the site opens in a browser.
 
 ---
 
-## 8. Backups (do this — it's your whole database + photos)
+## 7. Backups (daily, off the box)
 
-Everything the app persists is in `.data/`. Back it up with the included script:
+**What this does:** `deploy/backup.sh` tars up `.data/` (database + photos),
+copies the archive to a cloud drive with **rclone**, prunes old archives
+(7 local, 30 days remote), and cron runs it every night at 03:00. A VPS failure
+can then never take your only copy.
+
+**7.1 Connect rclone to Google Drive** (the owner's account; any rclone
+backend works — Backblaze B2 is the cheap alternative, storage type `b2`):
+```bash
+rclone config
+#  n            -> New remote
+#  name>        eps-backup            (this exact name; backup.sh looks for it)
+#  Storage>     drive                 (type the word; Google Drive)
+#  client_id / client_secret / scope -> press Enter for defaults
+#  "Use web browser to automatically authenticate?" -> n   (the VPS has no browser)
+#  it prints:   rclone authorize "drive" ...
+#               run THAT command on your laptop (install rclone there too), log in
+#               with the owner's Google account, paste the token back here
+#  Team Drive?  n  -> y to confirm
+#  q            -> quit
+rclone mkdir eps-backup:eps-backups
+```
+
+**7.2 First backup and the nightly schedule:**
 ```bash
 cd /opt/estudio-pedra-industrial
-bash deploy/backup.sh /var/backups/eps      # writes eps-backup-<timestamp>.tgz
-```
-**Automate it daily** with cron:
-```bash
+bash deploy/backup.sh /var/backups/eps      # writes eps-backup-<timestamp>.tgz and copies it
 crontab -e
-# add this line (3 AM daily):
-0 3 * * * /bin/bash /opt/estudio-pedra-industrial/deploy/backup.sh /var/backups/eps
+# add this line (03:00 daily, log to /var/log/eps-backup.log):
+0 3 * * * /bin/bash /opt/estudio-pedra-industrial/deploy/backup.sh /var/backups/eps >> /var/log/eps-backup.log 2>&1
 ```
-Periodically copy the archives off the VPS (e.g. `scp` them to your machine) so a
-server failure can't take your only copy.
+Without a configured remote the script still writes the local archive and
+prints `rclone remote 'eps-backup' not configured - skipping off-box copy.`
+
+**Check:** `rclone ls eps-backup:eps-backups` lists the archive, and the
+folder `eps-backups` appears in the Google Drive web UI.
+
+---
+
+## 8. Test your restore once
+
+**What this does:** proves the backup is usable *before* you need it.
+`deploy/restore.sh` stops the app, moves the current `.data/` aside as
+`.data.before-restore-<timestamp>/` (nothing is deleted), extracts the
+archive, and starts the app again.
+
+```bash
+cd /opt/estudio-pedra-industrial
+ls /var/backups/eps
+bash deploy/restore.sh /var/backups/eps/eps-backup-<timestamp>.tgz
+```
+Restoring from a cloud copy later: `rclone copy eps-backup:eps-backups/<file> /var/backups/eps/`
+first, then the same command.
+
+**Check:** `curl -s localhost:3000/healthz` prints `{"ok":true}` and
+`https://<domain>/catalogo` shows the products with their photos. Then
+`rm -rf .data.before-restore-*`.
 
 ---
 
@@ -238,16 +309,25 @@ bash deploy/deploy.sh     # git pull → npm ci → npm run build → pm2 restar
 ```
 `.data/` (database + photos) is preserved across updates.
 
+**One-time, only for a database created before the image pipeline existed**
+(photos still stored as single JPEG files): convert them into WebP variants:
+```bash
+npm run images:reprocess    # safe to run again; prints processed/skipped counts
+```
+
+**Check:** `curl -s localhost:3000/healthz` prints `{"ok":true}`.
+
 ---
 
 ## 10. Managing the running app
 
 ```bash
-pm2 status          # is it running?
-pm2 logs eps        # live logs (Ctrl+C to exit)
-pm2 restart eps     # restart
-pm2 stop eps        # stop
-pm2 start eps       # start again
+pm2 status                        # is it running?
+pm2 logs eps                      # live logs (Ctrl+C to exit)
+pm2 restart eps                   # restart
+pm2 stop eps                      # stop
+pm2 start eps                     # start again
+curl -s localhost:3000/healthz    # app + database alive?
 ```
 
 ---
@@ -255,29 +335,36 @@ pm2 start eps       # start again
 ## 11. Troubleshooting
 
 - **`npm ci` fails building `better-sqlite3`** → ensure `build-essential` and
-  `python3` are installed (Step 3). Then retry `npm ci`.
+  `python3` are installed (Step 2). Then retry `npm ci`.
+- **App won't start, logs say `ADMIN_PASSWORD is not set`** → the production
+  guard: fix `.env` (Step 4), then `pm2 restart eps`.
+- **`/healthz` returns 500** → the database query failed: check `pm2 logs eps`
+  and free disk space (`df -h`); a full disk is the usual cause.
 - **Can't reach `http://IP:3000`** → check `pm2 status` (is it `online`?),
   `pm2 logs eps` for errors, and that `ufw allow 3000` was applied (`ufw status`).
-- **HTTPS/domain not working** → confirm the DNS A record points to the VPS IP
-  (`ping yourdomain.com`), that ports 80/443 are open (`ufw status`), and check
-  `systemctl status caddy` + `journalctl -u caddy` for cert errors (DNS must
-  resolve before Caddy can issue a certificate).
+- **Caddy can't get a certificate** → the A record must be **grey cloud (DNS
+  only)** during the first issuance and point at the VPS IP (`ping <domain>`);
+  ports 80/443 open (`ufw status`); details in `journalctl -u caddy`.
+- **Cloudflare shows error 526** → SSL mode is Full (strict) but Caddy has no
+  valid certificate yet: finish 6.2 before 6.3.
 - **App didn't restart after reboot** → re-run `pm2 startup systemd` and run the
   command it prints, then `pm2 save`.
 - **Port already in use** → something else is on 3000; `pm2 delete eps` then start
-  again, or change `PORT` in `.env` (and the proxy target).
+  again, or change `PORT` in `.env` (and the proxy target in the Caddyfile).
 - **Lost the admin token** → `cat /opt/estudio-pedra-industrial/.env`.
+- **Backup log shows `skipping off-box copy`** → the rclone remote is missing or
+  misnamed: `rclone listremotes` must print `eps-backup:` (Step 7.1).
 
 ---
 
 ## 12. Security checklist
 
 - Keep the firewall tight: only SSH (22) + web (80/443). Close 3000 once Caddy is
-  in front (Step 7B).
+  in front (Step 6).
 - Prefer **SSH keys** over passwords; consider disabling root password login and
   using a non-root sudo user once comfortable.
 - **Never commit `.env`** or share the `ADMIN_PASSWORD` — it gates all writes.
-- Keep **backups off the box** (Step 8).
+- Keep **backups off the box** (Step 7) and **test the restore** (Step 8).
 - Run `apt update && apt upgrade -y` periodically to get security patches.
 
 ---
@@ -286,10 +373,11 @@ pm2 start eps       # start again
 
 | Task | Command |
 |---|---|
-| First deploy | Steps 3 → 6 |
-| Test by IP | Step 7A → `http://IP:3000` |
-| Add domain + HTTPS | Step 7B |
+| First deploy | Steps 2 → 6 |
+| Health check | `curl -s localhost:3000/healthz` |
 | Update to latest | `bash deploy/deploy.sh` |
-| Back up data | `bash deploy/backup.sh /var/backups/eps` |
+| Convert pre-pipeline photos (once) | `npm run images:reprocess` |
+| Back up data now | `bash deploy/backup.sh /var/backups/eps` |
+| Restore from a backup | `bash deploy/restore.sh /var/backups/eps/<file>.tgz` |
 | View logs | `pm2 logs eps` |
 | Get admin token | `cat .env` |
