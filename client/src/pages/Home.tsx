@@ -39,7 +39,7 @@ export default function Home() {
               />
             </div>
           </div>
-          <p className="text-lg text-muted-foreground max-w-2xl mb-8 md:mb-12 leading-relaxed">
+          <p className="text-lg text-muted-foreground max-w-2xl mb-8 md:mb-12 leading-relaxed line-clamp-3 md:line-clamp-none">
             Aqui, a criatividade guia cada detalhe. Exploramos materiais, formas e processos de maneira autoral, transformando ideias em soluções sob medida. 
 
 Nossa criatividade está em unir estética industrial, funcionalidade e inovação em cada projeto.
