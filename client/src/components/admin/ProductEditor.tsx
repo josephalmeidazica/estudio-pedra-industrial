@@ -33,9 +33,12 @@ const emptyForm = {
 };
 type Form = typeof emptyForm;
 
-// Full-screen below `sm`, the usual centred dialog above it.
+// Full-screen below `sm`, the usual centred dialog above it. A flex column
+// (not the default grid) so the body scrolls while header and footer stay put;
+// the global `.flex { min-height: 0 }` rule would otherwise let the grid
+// collapse header and footer to zero height when the content overflows.
 const PANEL =
-  "max-sm:inset-0 max-sm:left-0 max-sm:top-0 max-sm:h-dvh max-sm:max-h-dvh max-sm:w-screen max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-none overflow-y-auto sm:max-h-[90vh] sm:max-w-lg";
+  "flex flex-col max-sm:inset-0 max-sm:left-0 max-sm:top-0 max-sm:h-dvh max-sm:max-h-dvh max-sm:w-screen max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-none sm:max-h-[90vh] sm:max-w-lg";
 
 /** Photos-first editor for a piece. Used for "Nova peça" and for editing. */
 export function ProductEditor({ open, onOpenChange, productId }: Props) {
@@ -198,13 +201,19 @@ export function ProductEditor({ open, onOpenChange, productId }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={(o) => (o ? onOpenChange(true) : void close())}>
-      <DialogContent className={PANEL}>
-        <DialogHeader>
+      <DialogContent
+        className={PANEL}
+        // Tapping a toast's "Desfazer" is outside the dialog; it must not close it.
+        onPointerDownOutside={(e) => {
+          if ((e.target as Element | null)?.closest?.("[data-sonner-toaster]")) e.preventDefault();
+        }}
+      >
+        <DialogHeader className="shrink-0">
           <DialogTitle>{isNewDraft ? "Nova peça" : "Editar peça"}</DialogTitle>
           <DialogDescription className="sr-only">Fotos primeiro, depois os detalhes da peça.</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-5">
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto">
           {id == null ? (
             <p className="text-sm text-muted-foreground">Preparando…</p>
           ) : (
@@ -272,8 +281,8 @@ export function ProductEditor({ open, onOpenChange, productId }: Props) {
           </Collapsible>
         </div>
 
-        <DialogFooter className="gap-2 sm:justify-between">
-          <div className="flex items-center gap-2">
+        <DialogFooter className="shrink-0 gap-2 sm:justify-between">
+          <div className="flex flex-wrap items-center gap-2">
             {id != null && !isNewDraft &&
               (confirmingDelete ? (
                 <>
@@ -302,7 +311,7 @@ export function ProductEditor({ open, onOpenChange, productId }: Props) {
               </a>
             )}
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap justify-end gap-2">
             <Button variant="ghost" onClick={close}>
               Fechar
             </Button>
