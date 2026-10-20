@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { TRPCClientError } from "@trpc/client";
 import { ArrowDown, ArrowUp, LogOut, Pencil, Plus, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,20 +23,28 @@ import { ProductDialog } from "@/components/admin/ProductDialog";
 import { AmbientesTab } from "@/components/admin/AmbientesTab";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-const TOKEN_KEY = "eps_admin_token";
+/** Batch 1-3 kept the password in localStorage; the session cookie replaces it. */
+const LEGACY_TOKEN_KEY = "eps_admin_token";
 
 export default function Admin() {
   usePageTitle(titles.admin());
   const utils = trpc.useUtils();
-  const [token, setToken] = useState<string | null>(
-    typeof localStorage !== "undefined" ? localStorage.getItem(TOKEN_KEY) : null
-  );
+  const me = trpc.auth.me.useQuery(undefined, { retry: false });
+  const loginMutation = trpc.auth.login.useMutation();
+  const logoutMutation = trpc.auth.logout.useMutation();
   const [pw, setPw] = useState("");
+  const [loginError, setLoginError] = useState<string | null>(null);
 
-  const listAll = trpc.products.listAll.useQuery(undefined, {
-    enabled: Boolean(token),
-    retry: false,
-  });
+  useEffect(() => {
+    try {
+      localStorage.removeItem(LEGACY_TOKEN_KEY);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const authenticated = me.data?.authenticated === true;
+  const listAll = trpc.products.listAll.useQuery(undefined, { enabled: authenticated, retry: false });
   const reorder = trpc.products.reorder.useMutation();
   const del = trpc.products.delete.useMutation();
 
@@ -43,42 +52,57 @@ export default function Admin() {
   const [editing, setEditing] = useState<AdminProduct | null>(null);
   const [toDelete, setToDelete] = useState<AdminProduct | null>(null);
 
-  const unauthorized = listAll.error?.data?.code === "UNAUTHORIZED";
-  const authed = Boolean(token) && !unauthorized;
+  // A 401 on an admin query means the cookie expired or the password changed.
+  const sessionExpired = listAll.error?.data?.code === "UNAUTHORIZED";
+  useEffect(() => {
+    if (sessionExpired) {
+      setLoginError("Sua sessão expirou. Entre de novo.");
+      utils.auth.me.setData(undefined, { authenticated: false });
+    }
+  }, [sessionExpired, utils]);
 
   const login = async () => {
-    const value = pw.trim();
-    if (!value) return;
-    localStorage.setItem(TOKEN_KEY, value);
-    setToken(value);
-    setPw("");
-    await utils.products.listAll.invalidate();
-  };
-  const logout = () => {
-    localStorage.removeItem(TOKEN_KEY);
-    setToken(null);
-    // Don't invalidate/refetch here: the token is already gone from localStorage,
-    // so an in-flight refetch would hit the API unauthenticated and come back 401,
-    // making the login screen flash a misleading "Senha incorreta." after a clean
-    // logout. The query becomes disabled once `token` is null on next render, and
-    // the login screen never reads `listAll.data`, so no refetch is needed.
-    utils.products.listAll.setData(undefined, undefined);
+    const password = pw.trim();
+    if (!password) return;
+    setLoginError(null);
+    try {
+      await loginMutation.mutateAsync({ password });
+      setPw("");
+      await utils.auth.me.invalidate();
+      await utils.products.listAll.invalidate();
+    } catch (e) {
+      setLoginError(e instanceof TRPCClientError ? e.message : "Não foi possível entrar. Tente de novo.");
+    }
   };
 
+  const logout = async () => {
+    await logoutMutation.mutateAsync();
+    utils.products.listAll.setData(undefined, undefined);
+    utils.auth.me.setData(undefined, { authenticated: false });
+  };
+
+  if (me.isLoading) {
+    return <div className="mx-auto flex min-h-screen max-w-sm items-center justify-center p-6 text-muted-foreground">Carregando…</div>;
+  }
+
   // Login screen
-  if (!authed) {
+  if (!authenticated) {
     return (
       <div className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-4 p-6">
         <h1 className="text-xl font-semibold">Administração</h1>
-        {unauthorized && <p className="text-sm text-destructive">Senha incorreta.</p>}
+        {loginError && <p className="text-sm text-destructive">{loginError}</p>}
         <Input
           type="password"
+          autoComplete="current-password"
           placeholder="Senha de administrador"
           value={pw}
           onChange={(e) => setPw(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && login()}
         />
-        <Button onClick={login} disabled={!pw.trim()}>Entrar</Button>
+        <Button onClick={login} disabled={!pw.trim() || loginMutation.isPending}>
+          {loginMutation.isPending ? "Entrando…" : "Entrar"}
+        </Button>
+        <p className="text-xs text-muted-foreground">Você fica conectado neste aparelho por 30 dias.</p>
       </div>
     );
   }
