@@ -12,7 +12,14 @@ export async function listForProduct(db: DB, productId: number): Promise<Product
 
 export async function addImage(
   db: DB,
-  input: { productId: number; url: string; alt?: string }
+  input: {
+    productId: number;
+    url: string;
+    alt?: string;
+    width?: number;
+    height?: number;
+    variants?: Record<string, string>;
+  }
 ): Promise<ProductImage> {
   const existing = await listForProduct(db, input.productId);
   const nextOrder =
@@ -24,6 +31,9 @@ export async function addImage(
       url: input.url,
       alt: input.alt ?? "",
       sortOrder: nextOrder,
+      width: input.width ?? 0,
+      height: input.height ?? 0,
+      variants: input.variants ?? {},
     })
     .returning();
   return row;

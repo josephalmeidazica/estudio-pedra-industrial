@@ -25,6 +25,14 @@ export const productImages = sqliteTable("product_images", {
   url: text("url").notNull(),
   alt: text("alt").notNull().default(""),
   sortOrder: integer("sortOrder").notNull().default(0),
+  // Intrinsic size of the largest variant; 0/0 marks a legacy single-file row.
+  width: integer("width").notNull().default(0),
+  height: integer("height").notNull().default(0),
+  // { "480": "/uploads/<uuid>-480.webp", ... }; {} marks a legacy row.
+  variants: text("variants", { mode: "json" })
+    .$type<Record<string, string>>()
+    .notNull()
+    .default(sql`'{}'`),
   createdAt: integer("createdAt", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
 });
 
