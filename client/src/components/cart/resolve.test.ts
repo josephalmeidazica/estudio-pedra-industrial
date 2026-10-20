@@ -7,6 +7,18 @@ function prod(id: number, slug: string, name: string, category: string, isCustom
   return { id, slug, name, category, isCustom, images: [] } as unknown as PublicProduct;
 }
 
+test("while the catalog has not loaded, every line stays available under its snapshot name and the result is pending", () => {
+  const items: CartItem[] = [
+    { lineId: "a", productId: 1, name: "Mesa Urb", quantity: 2 },
+    { lineId: "c", productId: 5, name: "Apagada", quantity: 1 },
+  ];
+  const r = resolveCartLines(items, undefined);
+  expect(r.pending).toBe(true);
+  expect(r.unavailable).toEqual([]);
+  expect(r.available.map((l) => l.liveName)).toEqual(["Mesa Urb", "Apagada"]);
+  expect(resolveCartLines(items, []).pending).toBe(false);
+});
+
 test("resolveCartLines uses live names and separates unavailable lines; toMessageLines links or describes", () => {
   const products = [
     prod(1, "mesa-urb", "Mesa Urb (nova)", "Mesas"),

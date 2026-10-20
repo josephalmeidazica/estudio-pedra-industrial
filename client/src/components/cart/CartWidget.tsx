@@ -21,13 +21,18 @@ import { buildWhatsAppUrl } from "./whatsapp";
 
 export function CartWidget() {
   const { items, setQuantity, setNote, removeItem, clear, customer, setCustomer } = useCart();
-  const { data: products = [] } = trpc.products.list.useQuery();
+  const productsQuery = trpc.products.list.useQuery();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<ResolvedLine | null>(null);
 
-  const { available, unavailable } = resolveCartLines(items, products);
+  // Until the catalog has loaded, lines keep their snapshot names and nothing is judged unavailable.
+  const { available, unavailable, pending } = resolveCartLines(
+    items,
+    productsQuery.isSuccess ? productsQuery.data : undefined
+  );
   const count = totalCount(available);
-  const canCheckout = available.length > 0 && customer.name.trim().length > 0 && customer.bairro.trim().length > 0;
+  const canCheckout =
+    !pending && available.length > 0 && customer.name.trim().length > 0 && customer.bairro.trim().length > 0;
 
   const checkout = () => {
     if (!canCheckout) return;
@@ -158,6 +163,11 @@ export function CartWidget() {
 
           <Separator />
           <SheetFooter className="flex-col gap-3 sm:flex-col sm:space-x-0">
+            {productsQuery.isError && (
+              <p className="text-sm text-destructive">
+                Não foi possível carregar o catálogo. Verifique sua conexão e tente de novo.
+              </p>
+            )}
             {available.length > 0 && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <ShoppingBag className="h-4 w-4" />

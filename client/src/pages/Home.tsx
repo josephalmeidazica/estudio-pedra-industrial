@@ -25,7 +25,7 @@ export default function Home() {
       <section className="py-16 md:py-24 bg-background">
         <div className="container">
 
-          <div className="flex flex-col md:flex-row items-center gap-12 mb-12">
+          <div className="flex flex-col md:flex-row items-center gap-12 mb-6 md:mb-12">
             <div className="flex-1">
               <h1 className="text-4xl sm:text-5xl md:text-6xl heading-display text-foreground mb-8 leading-tight">
                 Móveis industriais personalizados
@@ -39,7 +39,7 @@ export default function Home() {
               />
             </div>
           </div>
-          <p className="text-lg text-muted-foreground max-w-2xl mb-12 leading-relaxed">
+          <p className="text-lg text-muted-foreground max-w-2xl mb-8 md:mb-12 leading-relaxed">
             Aqui, a criatividade guia cada detalhe. Exploramos materiais, formas e processos de maneira autoral, transformando ideias em soluções sob medida. 
 
 Nossa criatividade está em unir estética industrial, funcionalidade e inovação em cada projeto.
@@ -67,10 +67,10 @@ Nossa criatividade está em unir estética industrial, funcionalidade e inovaç�
 
       {/* Destaques */}
       {featured.length > 0 && (
-        <section className="py-20 bg-background border-t border-border">
+        <section className="py-10 md:py-20 bg-background border-t border-border">
           <div className="container">
-            <div className="mb-12">
-              <div className="inline-block mb-6 px-4 py-1 border border-foreground/30 rounded">
+            <div className="mb-8 md:mb-12">
+              <div className="inline-block mb-4 md:mb-6 px-4 py-1 border border-foreground/30 rounded">
                 <span className="text-accent-mono text-foreground text-xs">PORTFÓLIO</span>
               </div>
               <h2 className="text-5xl sm:text-6xl md:text-7xl heading-display text-foreground">

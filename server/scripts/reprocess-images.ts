@@ -3,10 +3,10 @@
 // run with `npm run images:reprocess` from the repo root (same cwd rules as
 // the server). Safe to run repeatedly.
 import "dotenv/config";
-import { db } from "../db/client";
+import { getDb } from "../db/client";
 import { reprocessLegacyImages } from "../lib/reprocess";
 
-reprocessLegacyImages(db)
+reprocessLegacyImages(getDb())
   .then(({ processed, skipped }) => {
     console.log(`processed: ${processed}, skipped: ${skipped}`);
     process.exit(0);

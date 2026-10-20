@@ -1,13 +1,14 @@
 import "dotenv/config";
 import { createServer } from "http";
 import { createApp } from "./app";
-import { db } from "./db/client";
+import { getDb } from "./db/client";
 import { ensureCustomProduct, ensureProductImages, seedIfEmpty } from "./db/seed";
 import { assertProductionConfig } from "./lib/config";
 import { serveStatic, setupVite } from "./vite";
 
 async function startServer() {
   assertProductionConfig(process.env);
+  const db = getDb();
 
   await seedIfEmpty(db);
   await ensureCustomProduct(db);

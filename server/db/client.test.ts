@@ -45,3 +45,17 @@ test("deleting a product cascades to its images", async () => {
   const left = await db.select().from(productImages);
   expect(left).toHaveLength(0);
 });
+
+test("importing the module does not open the default database; getDb() does, once", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "eps-lazy-"));
+  tmpDirs.push(dir);
+  const file = path.join(dir, "lazy.db");
+  process.env.DATABASE_PATH = file;
+  const mod = await import("./client?lazy=" + Date.now());
+  expect(fs.existsSync(file)).toBe(false);
+  const a = mod.getDb();
+  openDbs.push(a);
+  expect(fs.existsSync(file)).toBe(true);
+  expect(mod.getDb()).toBe(a);
+  delete process.env.DATABASE_PATH;
+});

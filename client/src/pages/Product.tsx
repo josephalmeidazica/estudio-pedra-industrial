@@ -5,6 +5,7 @@ import { AddToCartButton } from "@/components/cart/AddToCartButton";
 import { ProductCard } from "@/components/catalog/ProductCard";
 import { QuoteButton } from "@/components/catalog/QuoteButton";
 import { ImageLightbox } from "@/components/ImageLightbox";
+import { Button } from "@/components/ui/button";
 import { Layout } from "@/components/layout/Layout";
 import { ResponsiveImage } from "@/components/ResponsiveImage";
 import { hasDimensions, thumbUrl } from "@/lib/imageSrcSet";
@@ -42,6 +43,24 @@ export default function Product() {
         <section className="py-32">
           <div className="container">
             <p className="text-muted-foreground">Carregando…</p>
+          </div>
+        </section>
+      </Layout>
+    );
+  }
+  if (product.isError) {
+    return (
+      <Layout showCart>
+        <section className="py-32">
+          <div className="container max-w-2xl text-center">
+            <h1 className="heading-display text-3xl sm:text-4xl text-foreground mb-4">Não foi possível carregar esta peça</h1>
+            <p className="text-muted-foreground mb-8">Verifique sua conexão e tente de novo.</p>
+            <Button
+              className="bg-foreground text-background hover:bg-secondary heading-secondary text-sm px-8 py-3 rounded"
+              onClick={() => product.refetch()}
+            >
+              Tentar novamente
+            </Button>
           </div>
         </section>
       </Layout>

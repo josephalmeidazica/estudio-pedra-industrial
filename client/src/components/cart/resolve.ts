@@ -13,14 +13,27 @@ export type ResolvedLine = CartItem & {
 /** What the message builder needs per line: a link for catalog pieces, a description for the custom one. */
 export type MessageLine = { name: string; quantity: number; url?: string; note?: string };
 
+export type ResolvedCart = {
+  available: ResolvedLine[];
+  unavailable: CartItem[];
+  /** True while the catalog has not loaded: lines are shown under their snapshot names and checkout waits. */
+  pending: boolean;
+};
+
 /**
  * Join cart lines to the published products. A line whose product is gone
  * (deleted or unpublished) is "unavailable": shown greyed out, never sent.
+ * With `products` undefined (query still loading or failed) nothing is
+ * judged unavailable yet.
  */
-export function resolveCartLines(
-  items: CartItem[],
-  products: PublicProduct[]
-): { available: ResolvedLine[]; unavailable: CartItem[] } {
+export function resolveCartLines(items: CartItem[], products: PublicProduct[] | undefined): ResolvedCart {
+  if (!products) {
+    return {
+      available: items.map((item) => ({ ...item, slug: "", liveName: item.name, category: "" })),
+      unavailable: [],
+      pending: true,
+    };
+  }
   const byId = new Map(products.map((p) => [p.id, p]));
   const available: ResolvedLine[] = [];
   const unavailable: CartItem[] = [];
@@ -38,7 +51,7 @@ export function resolveCartLines(
       thumb: p.images[0] ? thumbUrl(p.images[0]) : undefined,
     });
   }
-  return { available, unavailable };
+  return { available, unavailable, pending: false };
 }
 
 export function toMessageLines(available: ResolvedLine[], origin: string): MessageLine[] {
