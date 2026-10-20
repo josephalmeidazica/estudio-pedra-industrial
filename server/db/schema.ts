@@ -16,6 +16,8 @@ export const products = sqliteTable("products", {
   isCustom: integer("isCustom", { mode: "boolean" }).notNull().default(false),
   sortOrder: integer("sortOrder").notNull().default(0),
   published: integer("published", { mode: "boolean" }).notNull().default(true),
+  // Set when the owner deletes the piece (Lixeira); purged after 30 days.
+  deletedAt: integer("deletedAt", { mode: "timestamp" }),
   createdAt: integer("createdAt", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
   updatedAt: integer("updatedAt", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
 });
@@ -36,6 +38,7 @@ export const productImages = sqliteTable("product_images", {
     .$type<Record<string, string>>()
     .notNull()
     .default(sql`'{}'`),
+  deletedAt: integer("deletedAt", { mode: "timestamp" }),
   createdAt: integer("createdAt", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
 });
 
@@ -53,6 +56,7 @@ export const galleryImages = sqliteTable("gallery_images", {
     .$type<Record<string, string>>()
     .notNull()
     .default(sql`'{}'`),
+  deletedAt: integer("deletedAt", { mode: "timestamp" }),
   createdAt: integer("createdAt", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
 });
 

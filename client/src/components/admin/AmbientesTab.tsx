@@ -60,6 +60,7 @@ export function AmbientesTab() {
   const add = trpc.gallery.add.useMutation();
   const del = trpc.gallery.delete.useMutation();
   const reorder = trpc.gallery.reorder.useMutation();
+  const restore = trpc.trash.restore.useMutation();
 
   const products = (listAll.data ?? []).filter((p) => p.published).map((p) => ({ id: p.id, name: p.name }));
   const items = gallery.data ?? [];
@@ -76,6 +77,7 @@ export function AmbientesTab() {
         actions={{
           add: (dataUrl) => add.mutateAsync({ dataUrl }),
           remove: (id) => del.mutateAsync({ id }),
+          onUndo: (id) => restore.mutateAsync({ kind: "gallery", id }),
           reorder: (orderedIds) => reorder.mutateAsync({ orderedIds }),
         }}
         onChanged={() => utils.gallery.list.invalidate()}

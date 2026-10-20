@@ -136,16 +136,21 @@ npm run build
 
 ## 4. Configure the environment (`.env`)
 
-**What this does:** creates a `.env` file with a secret admin token (used to
-log in to the `/admin` panel, where you manage products and their photos),
-tells the app to run in production mode, and sets the port.
+**What this does:** creates a `.env` file with the admin passphrase (what the
+owner types at `/admin` to manage pieces and photos), tells the app to run in
+production mode, and sets the port.
+
+First choose the passphrase: **at least 12 characters, easy to type on a
+phone** — three unrelated words with spaces work well (`mesa ferro carvalho`).
+Each phone that logs in stays logged in for 30 days, so it is typed rarely.
 
 ```bash
 printf 'ADMIN_PASSWORD=%s\nSITE_URL=https://<domain>\nNODE_ENV=production\nPORT=3000\n' \
-  "$(node -e "console.log(require('crypto').randomBytes(24).toString('hex'))")" > .env
-cat .env    # copy the ADMIN_PASSWORD somewhere safe
+  '<your passphrase>' > .env
+cat .env    # keep the passphrase somewhere safe
 ```
-Replace `<domain>` with the real domain from step 0, without a trailing slash.
+Replace `<your passphrase>` (keep the single quotes around it) and `<domain>`
+with the real domain from step 0, without a trailing slash.
 
 Notes:
 - **`SITE_URL`** is the public address the server writes into link previews
@@ -153,15 +158,21 @@ Notes:
   sitemap and robots.txt. Without it the server uses each request's host and
   logs a warning at start; previews still work, but through the proxy the
   host could be wrong, so set it.
-- **Reads and the WhatsApp buttons need no token** — it only gates writes
-  (product/image management).
+- **Reads and the WhatsApp buttons need no passphrase** — it only gates the
+  admin panel (piece/photo management).
+- **Changing `ADMIN_PASSWORD` logs every device out.** Optional: add a line
+  `SESSION_SECRET=<long random string>` to keep logins valid across passphrase
+  changes; then changing `SESSION_SECRET` itself is how you force every device
+  to log in again (e.g. a lost phone).
 - **In production the server refuses to start without `ADMIN_PASSWORD`**, so a
-  forgotten token shows up as a clear error in `pm2 logs eps`, not as an open
-  admin panel.
-- `.env` is git-ignored — it's never committed or pushed. Keep the token private.
+  forgotten passphrase shows up as a clear error in `pm2 logs eps`, not as an
+  open admin panel.
+- `.env` is git-ignored — it's never committed or pushed. Keep the passphrase
+  private.
 - On first start the app creates `.data/app.db` (seeded with 9 starter products,
   whose photos are converted to WebP variants) and `.data/uploads/`.
-  **Don't delete `.data/` — it's your database + photos.**
+  **Don't delete `.data/` — it's your database + photos, including the Lixeira
+  (deleted items, restorable for 30 days).**
 
 **Check:** `grep -c ADMIN_PASSWORD .env` prints `1`.
 
@@ -396,7 +407,11 @@ curl -s localhost:3000/healthz    # app + database alive?
   command it prints, then `pm2 save`.
 - **Port already in use** → something else is on 3000; `pm2 delete eps` then start
   again, or change `PORT` in `.env` (and the proxy target in the Caddyfile).
-- **Lost the admin token** → `cat /opt/estudio-pedra-industrial/.env`.
+- **Forgot the admin passphrase** → `cat /opt/estudio-pedra-industrial/.env`.
+- **Phone says `Muitas tentativas`** → five wrong passwords in a row from one
+  address block logins for 15 minutes; wait and try again.
+- **Lost a phone that was logged in** → change `ADMIN_PASSWORD` in `.env` (or
+  `SESSION_SECRET` if set) and `pm2 restart eps`; every device must log in again.
 - **Backup log shows `skipping off-box copy`** → the rclone remote is missing or
   misnamed: `rclone listremotes` must print `eps-backup:` (Step 7.1).
 
@@ -408,7 +423,7 @@ curl -s localhost:3000/healthz    # app + database alive?
   in front (Step 6).
 - Prefer **SSH keys** over passwords; consider disabling root password login and
   using a non-root sudo user once comfortable.
-- **Never commit `.env`** or share the `ADMIN_PASSWORD` — it gates all writes.
+- **Never commit `.env`** or share the `ADMIN_PASSWORD` — it is the admin login.
 - Keep **backups off the box** (Step 7) and **test the restore** (Step 8).
 - Run `apt update && apt upgrade -y` periodically to get security patches.
 
@@ -426,4 +441,4 @@ curl -s localhost:3000/healthz    # app + database alive?
 | Back up data now | `bash deploy/backup.sh /var/backups/eps` |
 | Restore from a backup | `bash deploy/restore.sh /var/backups/eps/<file>.tgz` |
 | View logs | `pm2 logs eps` |
-| Get admin token | `cat .env` |
+| See the admin passphrase | `cat .env` |

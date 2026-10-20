@@ -2,8 +2,8 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { adminProcedure, router } from "../trpc";
 import * as repo from "../db/images.repo";
+import { softDelete } from "../db/trash.repo";
 import { isUploadRejection, processUpload } from "../lib/imagePipeline";
-import { deleteImageByUrl } from "../lib/images";
 
 export const imagesRouter = router({
   add: adminProcedure
@@ -20,11 +20,11 @@ export const imagesRouter = router({
       }
       return repo.addImage(ctx.db, { productId: input.productId, alt: input.alt, ...processed });
     }),
+  // Moves the photo to the Lixeira; the files stay until it is purged.
   delete: adminProcedure
     .input(z.object({ imageId: z.number().int() }))
     .mutation(async ({ ctx, input }) => {
-      const url = await repo.deleteImage(ctx.db, input.imageId);
-      if (url) deleteImageByUrl(url);
+      await softDelete(ctx.db, "image", input.imageId);
       return { success: true as const };
     }),
   reorder: adminProcedure

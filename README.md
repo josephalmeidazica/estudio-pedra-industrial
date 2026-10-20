@@ -8,7 +8,8 @@ Self-contained: one Node process, SQLite, files on disk.
 ## Stack
 
 - **Frontend:** React 19 + Vite 7 + Tailwind CSS v4 + wouter (routing) + shadcn/ui
-- **Backend:** Express + tRPC (`products`, `images` and `gallery` routers), `GET /healthz`
+- **Backend:** Express + tRPC (`auth`, `products`, `images`, `gallery` and `trash`
+  routers), `GET /healthz`
 - **Data:** SQLite (via Drizzle) for product data; product photos as WebP variants on
   disk (generated with sharp) — no external database or service to install
 
@@ -69,59 +70,90 @@ Deployment: [`DEPLOY.md`](./DEPLOY.md) (cheat-sheet) and [`VPS-SETUP.md`](./VPS-
 - The nine bundled default photos (`client/public/products/`) go through the same
   pipeline on first boot. Databases created before the pipeline existed can be
   converted once with `npm run images:reprocess` (run `npm run build` first).
-- HEIC uploads: iPhone Safari converts them to JPEG in the browser automatically. On
-  browsers that cannot decode HEIC the server rejects the file with guidance to send
-  JPEG instead. Corrupt or oversized (> 20 MB) files are rejected with a Portuguese
-  message too.
+- HEIC uploads (iPhone camera roll): Safari decodes them natively and the browser
+  re-encodes to JPEG before upload. On browsers that cannot decode HEIC (Chrome,
+  Android) the admin loads a converter (`heic2any`, a separate lazily-loaded chunk
+  that public pages never download) and converts in the browser, showing
+  "Convertendo foto do iPhone…". Corrupt or oversized (> 20 MB) files are rejected
+  with a Portuguese message.
+- **Lixeira (trash):** deleting a piece, a photo or an Ambientes photo only sets
+  `deletedAt`; the item disappears from the site, the sitemap and its detail URL but
+  stays restorable from the admin's Lixeira tab for 30 days, after which a daily job
+  (also run at boot) purges the rows and every variant/og file. A deleted piece keeps
+  its slug reserved while it is in the Lixeira (a new piece with the same name gets
+  `-2`). "Excluir definitivamente" purges immediately.
 - `.data/` is git-ignored — it is local, per-machine state. **It is the whole
-  database plus every photo: back it up** (`deploy/backup.sh`).
+  database plus every photo, Lixeira included: back it up** (`deploy/backup.sh`).
 
-### Auth token
+### Auth (passphrase, cookie or bearer)
 
-Public endpoints: `products.list`, `products.getBySlug` and `gallery.list`. Everything
-else — all mutations plus the admin read `products.listAll` — requires a bearer token.
+Public endpoints: `products.list`, `products.getBySlug`, `gallery.list` and `auth.*`.
+Everything else — all mutations, `products.listAll` and `trash.*` — requires admin
+auth, which is either of:
 
-1. Copy `.env.example` to `.env` (if you haven't already).
-2. Generate a token and set it as `ADMIN_PASSWORD` in `.env`:
-   ```bash
-   node -e "console.log(require('crypto').randomBytes(24).toString('hex'))"
-   ```
-3. Every non-public request must send `Authorization: Bearer <token>`. Requests without
-   a valid token are rejected (fail-closed). In production the server refuses to start
-   if the token is unset.
+- **Session cookie** (what the admin panel uses): `auth.login({ password })` checks the
+  passphrase and sets `eps_session`, an HMAC-signed, `HttpOnly`, `SameSite=Lax` cookie
+  valid for 30 days (`Secure` when the request came over HTTPS). `auth.logout` clears
+  it; `auth.me` reports whether the caller is logged in. Five wrong passwords from one
+  IP within 15 minutes answer `Muitas tentativas. Aguarde 15 minutos e tente de novo.`
+- **Bearer token** (scripts, tests): `Authorization: Bearer <ADMIN_PASSWORD>`.
 
-`.env` is git-ignored; never commit a real token value.
+Setup: copy `.env.example` to `.env` and set `ADMIN_PASSWORD` to a passphrase (≥ 12
+characters; three words with spaces are fine). The cookie key is derived from the
+passphrase, so changing it logs every device out; set the optional `SESSION_SECRET`
+to decouple the two. Requests without valid auth are rejected (fail-closed); in
+production the server refuses to start if `ADMIN_PASSWORD` is unset. `.env` is
+git-ignored; never commit a real passphrase.
 
 ### Admin panel (/admin)
 
-Password-protected panel with two tabs. **Produtos:** create/edit/delete/reorder products
-(name, slug, category, materials, dimensions, price, description, *Destaque*,
-*Publicado*, *Personalizado*) and upload/remove/reorder their images (set a cover).
-**Ambientes:** upload, caption, reorder and delete photos of installed pieces, each
-optionally linked to a product. Public visitors just browse the catalog and use the
-WhatsApp buttons; no admin controls are shown there.
+Built for the owner's phone: log in once, stay logged in for 30 days. Three tabs.
+**Peças:** the list of pieces (reorder, edit, move to the Lixeira). "Nova peça" opens a
+photos-first editor (full-screen on phones): a hidden draft is created immediately, so
+photos picked from the camera roll (several at once, with progress) attach to it
+straight away; then name, category, description, materials/dimensions and, under
+"Mais opções", slug, price, *Destaque* and *Personalizado*. "Salvar" keeps it as a
+draft ("Rascunho"), "Publicar" puts it on the site and shows a "Ver no site" link.
+Closing an untouched "Nova peça" discards it. **Ambientes:** upload, caption, reorder
+and delete photos of installed pieces, each optionally linked to a product.
+**Lixeira:** everything deleted in the last 30 days, with "Restaurar" and "Excluir
+definitivamente". Deletions show a toast with "Desfazer". Public visitors just browse
+the catalog and use the WhatsApp buttons; no admin controls are shown there.
 
 ### API (tRPC)
 
-The server exposes three tRPC routers, consumed by the client via `client/src/lib/trpc.ts`:
+The server exposes five tRPC routers, consumed by the client via `client/src/lib/trpc.ts`:
 
+- **`auth`**
+  - `login` / `logout` / `me` — public; session cookie management (see Auth above).
 - **`products`**
   - `list` — public; published products for the catalog.
   - `getBySlug` — public; a single published product by slug, `null` when missing or
     unpublished (drafts never leak).
   - `listAll` — admin; all products (including drafts), for management.
-  - `create` / `update` / `delete` — admin. Setting `isCustom` on one product clears it on
-    the others.
+  - `create` / `update` — admin. Setting `isCustom` on one product clears it on the
+    others. While a piece is unpublished its slug follows its name; once published the
+    slug is frozen unless set explicitly.
+  - `delete` — admin; moves the piece (and its photos) to the Lixeira.
+  - `discardEmptyDraft` — admin; hard-deletes a piece only if it is still the untouched
+    "Nova peça" draft (no name, no description, no photos, unpublished).
   - `reorder` — admin; persists catalog display order.
 - **`images`**
   - `add` — admin; attach an image (from a data URL) to a product. Runs the variant
-    pipeline; rejects HEIC, files over 20 MB and undecodable data with a Portuguese message.
-  - `delete` — admin; remove an image and all its variant files.
+    pipeline; rejects undecodable data (including HEIC the browser did not convert) and
+    files over 20 MB with a Portuguese message.
+  - `delete` — admin; moves the image to the Lixeira (files stay until purged).
   - `reorder` — admin; persists image display order for a product.
   - `setCover` — admin; mark an image as the product's cover photo.
 - **`gallery`** (Ambientes)
   - `list` — public; installed-piece photos in display order.
-  - `add` / `update` (caption, related product) / `delete` / `reorder` — admin.
+  - `add` / `update` (caption, related product) / `delete` (to the Lixeira) / `reorder` — admin.
+- **`trash`** (Lixeira)
+  - `list` — admin; deleted pieces, photos and Ambientes photos, newest first.
+  - `restore` — admin; brings an item back (restoring a photo also restores its deleted
+    parent piece).
+  - `purge` — admin; deletes the rows and every variant/og file now. Items older than 30
+    days are purged automatically (daily job, also at boot).
 
 Plain HTTP: `GET /healthz` returns `200 {"ok":true}` after a trivial database query
 (used by pm2/Caddy/uptime checks); `GET /uploads/<file>` serves photos;

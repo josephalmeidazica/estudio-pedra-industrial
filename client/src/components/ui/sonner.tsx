@@ -8,6 +8,10 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <Sonner
       theme={theme as ToasterProps["theme"]}
       className="toaster group"
+      // Radix modal dialogs set `pointer-events: none` on <body>, which the
+      // toaster inherits; without this a toast's action ("Desfazer") cannot be
+      // tapped while the product editor is open.
+      toastOptions={{ className: "pointer-events-auto" }}
       style={
         {
           "--normal-bg": "var(--popover)",

@@ -25,18 +25,9 @@ const trpcClient = trpc.createClient({
     httpBatchLink({
       url: "/api/trpc",
       transformer: superjson,
+      // The admin session is an HttpOnly cookie; `credentials: "include"` sends it.
       fetch(input, init) {
-        const token =
-          typeof localStorage !== "undefined"
-            ? localStorage.getItem("eps_admin_token")
-            : null;
-        const headers = new Headers(init?.headers);
-        if (token) headers.set("Authorization", `Bearer ${token}`);
-        return globalThis.fetch(input, {
-          ...(init ?? {}),
-          headers,
-          credentials: "include",
-        });
+        return globalThis.fetch(input, { ...(init ?? {}), credentials: "include" });
       },
     }),
   ],

@@ -1,9 +1,10 @@
-import { asc, eq } from "drizzle-orm";
+import { asc, eq, isNull } from "drizzle-orm";
 import type { DB } from "./client";
 import { galleryImages, type GalleryImage } from "./schema";
 
+/** Gallery photos, excluding ones in the Lixeira. */
 export async function listGallery(db: DB): Promise<GalleryImage[]> {
-  return db.select().from(galleryImages).orderBy(asc(galleryImages.sortOrder));
+  return db.select().from(galleryImages).where(isNull(galleryImages.deletedAt)).orderBy(asc(galleryImages.sortOrder));
 }
 
 export async function addGalleryImage(

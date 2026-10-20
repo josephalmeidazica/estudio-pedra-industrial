@@ -54,14 +54,23 @@ npm run build
 **Check:** `ls dist/index.js dist/scripts/reprocess-images.js` lists both files.
 
 ## 4. Configure `.env`
+Choose a **passphrase** first: at least 12 characters, easy to type on a phone,
+e.g. three unrelated words with spaces (`mesa ferro carvalho`). The owner types
+it once at `/admin` and each phone stays logged in for 30 days.
 ```bash
 printf 'ADMIN_PASSWORD=%s\nSITE_URL=https://<domain>\nNODE_ENV=production\nPORT=3000\n' \
-  "$(node -e "console.log(require('crypto').randomBytes(24).toString('hex'))")" > .env
-cat .env    # copy ADMIN_PASSWORD — log in at /admin to manage products and photos
+  '<your passphrase>' > .env
+cat .env    # ADMIN_PASSWORD is the login at /admin to manage pieces and photos
 ```
-Replace `<domain>` with the real one (no trailing slash). `SITE_URL` is what
-link previews, the sitemap and robots.txt use for absolute URLs; without it
-the server falls back to each request's host and logs a warning.
+Replace `<your passphrase>` (keep the single quotes) and `<domain>` (no trailing
+slash). `SITE_URL` is what link previews, the sitemap and robots.txt use for
+absolute URLs; without it the server falls back to each request's host and
+logs a warning.
+
+Changing `ADMIN_PASSWORD` later logs every device out. Optional: add
+`SESSION_SECRET=<long random string>` to keep logins valid across passphrase
+changes (then change `SESSION_SECRET` itself to force every device to log in
+again).
 
 The server **refuses to start in production without `ADMIN_PASSWORD`**. On
 first start the app creates `.data/app.db` (seeded with 9 products, their
@@ -166,6 +175,8 @@ npm run images:reprocess
   `python3` are installed (step 2).
 - Logs: `pm2 logs eps`. Status: `pm2 status`. Health: `curl localhost:3000/healthz`.
 - `.env`, `.data/`, `node_modules/`, and `dist/` are git-ignored — deploys
-  never overwrite your token or data.
+  never overwrite your passphrase or data.
+- The Lixeira (deleted pieces and photos, restorable for 30 days) lives
+  inside `.data/` too, so backups (step 7) include it.
 - Certificate renewals keep working with the Cloudflare proxy on; only the
   first issuance needs the grey cloud.

@@ -2,7 +2,8 @@ import { initTRPC, TRPCError } from "@trpc/server";
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import superjson from "superjson";
 import type { DB } from "./db/client";
-import { isValidAdminToken } from "./lib/auth";
+import { authorizeAdminRequest } from "./lib/auth";
+import { LOGIN_THROTTLED_MESSAGE } from "./lib/session";
 
 export type TrpcContext = {
   req: CreateExpressContextOptions["req"];
@@ -16,9 +17,9 @@ export const router = t.router;
 export const publicProcedure = t.procedure;
 
 const requireAdmin = t.middleware(({ ctx, next }) => {
-  if (!isValidAdminToken(ctx.req.headers.authorization)) {
-    throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid or missing admin token" });
-  }
+  const result = authorizeAdminRequest(ctx.req);
+  if (result === "throttled") throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: LOGIN_THROTTLED_MESSAGE });
+  if (result === "unauthorized") throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid or missing admin token" });
   return next({ ctx });
 });
 

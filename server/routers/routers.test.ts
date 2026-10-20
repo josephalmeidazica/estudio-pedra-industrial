@@ -107,7 +107,7 @@ test("images.add maps a corrupt file to BAD_REQUEST in Portuguese, and a server 
   fs.rmSync(blocker, { force: true });
 });
 
-test("images.delete and products.delete remove every variant file", async () => {
+test("images.delete and products.delete are soft: files stay until the product is purged from the trash", async () => {
   const db = freshDb();
   const admin = appRouter.createCaller(ctxFor(db, "test-token"));
   const p = await admin.products.create({ name: "P" });
@@ -115,9 +115,43 @@ test("images.delete and products.delete remove every variant file", async () => 
   await admin.images.add({ productId: p.id, dataUrl: await pngDataUrl(600, 600) });
   expect(uploads()).toHaveLength(5);
   await admin.images.delete({ imageId: a.id });
-  expect(uploads()).toHaveLength(2);
+  expect(uploads()).toHaveLength(5);
   await admin.products.delete({ id: p.id });
+  expect(uploads()).toHaveLength(5);
+  await admin.trash.purge({ kind: "product", id: p.id });
   expect(uploads()).toHaveLength(0);
+});
+
+test("admin deletes are soft; trash lists, restores and purges; files go only on purge", async () => {
+  const db = freshDb();
+  const admin = appRouter.createCaller(ctxFor(db, "test-token"));
+  const anon = appRouter.createCaller(ctxFor(db));
+  const p = await admin.products.create({ name: "P" });
+  const img = await admin.images.add({ productId: p.id, dataUrl: await pngDataUrl(600, 400) });
+  await admin.images.delete({ imageId: img.id });
+  expect(uploads()).toHaveLength(2); // files kept
+  expect((await anon.products.list())[0].images).toEqual([]);
+  expect((await admin.trash.list()).images.map((i) => i.id)).toEqual([img.id]);
+  await admin.trash.restore({ kind: "image", id: img.id });
+  expect((await anon.products.list())[0].images).toHaveLength(1);
+  await admin.products.delete({ id: p.id });
+  expect(await anon.products.list()).toEqual([]);
+  expect(await anon.products.getBySlug({ slug: "p" })).toBeNull();
+  await expect(admin.trash.restore({ kind: "product", id: 9999 })).rejects.toMatchObject({ code: "NOT_FOUND" });
+  await admin.trash.purge({ kind: "product", id: p.id });
+  expect(uploads()).toEqual([]);
+  expect(await admin.trash.list()).toEqual({ products: [], images: [], gallery: [] });
+});
+
+test("discardEmptyDraft is enforced server-side", async () => {
+  const db = freshDb();
+  const admin = appRouter.createCaller(ctxFor(db, "test-token"));
+  const draft = await admin.products.create({ name: "Nova peça", published: false });
+  await admin.images.add({ productId: draft.id, dataUrl: await pngDataUrl(100, 100) });
+  expect(await admin.products.discardEmptyDraft({ id: draft.id })).toEqual({ discarded: false });
+  const empty = await admin.products.create({ name: "Nova peça", published: false });
+  expect(await admin.products.discardEmptyDraft({ id: empty.id })).toEqual({ discarded: true });
+  expect((await admin.products.listAll()).map((x) => x.id)).toEqual([draft.id]);
 });
 
 test("public getBySlug returns null for unpublished products", async () => {
@@ -141,5 +175,9 @@ test("gallery router: public list, admin add/update/delete with variant cleanup"
   expect((await anon.gallery.list())[0].caption).toBe("Cozinha");
   await expect(admin.gallery.update({ id: 9999, caption: "x" })).rejects.toMatchObject({ code: "NOT_FOUND" });
   await admin.gallery.delete({ id: g.id });
+  expect(await anon.gallery.list()).toEqual([]);
+  expect(uploads()).toHaveLength(2); // soft delete keeps the files
+  expect((await admin.trash.list()).gallery.map((x) => x.id)).toEqual([g.id]);
+  await admin.trash.purge({ kind: "gallery", id: g.id });
   expect(uploads()).toEqual([]);
 });

@@ -103,3 +103,34 @@ test("getPublishedBySlug hides unpublished products; getBySlug still returns the
   expect((await repo.getBySlug(db, "hidden"))?.name).toBe("Hidden");
   expect(await repo.getPublishedBySlug(db, "nope")).toBeNull();
 });
+
+test("slug follows the name while unpublished, freezes once published; discardEmptyDraft only removes untouched drafts", async () => {
+  const db = freshDb();
+  const d = await repo.createProduct(db, { name: "Nova peça", published: false });
+  expect(d.slug).toBe("nova-peca");
+  const renamed = await repo.updateProduct(db, d.id, { name: "Mesa Urb" });
+  expect(renamed!.slug).toBe("mesa-urb");
+  const published = await repo.updateProduct(db, d.id, { name: "Mesa Urb", published: true });
+  expect(published!.slug).toBe("mesa-urb");
+  const renamedLive = await repo.updateProduct(db, d.id, { name: "Mesa Urbana" });
+  expect(renamedLive!.slug).toBe("mesa-urb"); // frozen
+  expect((await repo.updateProduct(db, d.id, { slug: "mesa-urbana" }))!.slug).toBe("mesa-urbana"); // explicit wins
+
+  const empty = await repo.createProduct(db, { name: "Nova peça", published: false });
+  const withPhoto = await repo.createProduct(db, { name: "Nova peça", published: false });
+  await db.insert(productImages).values({ productId: withPhoto.id, url: "/uploads/p-480.webp" });
+  const withText = await repo.createProduct(db, { name: "Nova peça", description: "algo", published: false });
+  expect(await repo.discardEmptyDraft(db, empty.id)).toBe(true);
+  expect(await repo.discardEmptyDraft(db, withPhoto.id)).toBe(false);
+  expect(await repo.discardEmptyDraft(db, withText.id)).toBe(false);
+  expect(await repo.discardEmptyDraft(db, d.id)).toBe(false);
+  expect(await repo.listAll(db)).toHaveLength(3);
+});
+
+test("discardEmptyDraft keeps a draft whose only photo is in the Lixeira (its file is not orphaned)", async () => {
+  const db = freshDb();
+  const d = await repo.createProduct(db, { name: "Nova peça", published: false });
+  await db.insert(productImages).values({ productId: d.id, url: "/uploads/t-480.webp", deletedAt: new Date() });
+  expect(await repo.discardEmptyDraft(db, d.id)).toBe(false);
+  expect(await repo.listAll(db)).toHaveLength(1);
+});
