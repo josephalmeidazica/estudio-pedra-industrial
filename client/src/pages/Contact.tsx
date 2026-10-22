@@ -1,101 +1,89 @@
 /*
   Estúdio Pedra Industrial - Página de Contato
-  Design: Minimalista sofisticado, elegante, premium
-  Foco em informações de contato direto
+  Abertura, quatro cartões (WhatsApp, Instagram, horário, oficina) e faixa de padrão.
 */
 
-import { MessageCircle, Instagram } from "lucide-react";
-import { Link } from "wouter";
+import { HOURS, INSTAGRAM_HANDLE, INSTAGRAM_URL, PHONE_DISPLAY, addressLines } from "@shared/content/site";
+import { titles } from "@shared/seo-text";
 import { Layout } from "@/components/layout/Layout";
+import { InstagramIcon } from "@/components/icons/InstagramIcon";
+import { LineIcon } from "@/components/icons/LineIcon";
+import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
+import { ResponseBadge } from "@/components/ui/ResponseBadge";
 import { WHATSAPP_LINK } from "@/lib/whatsapp";
 import { usePageTitle } from "@/lib/usePageTitle";
-import { titles } from "@shared/seo-text";
+
+const CARD = "flex min-w-0 flex-col gap-5 border border-card p-6 md:p-9";
+const CARD_LINK = `${CARD} bg-background hover:bg-card`;
 
 export default function Contact() {
   usePageTitle(titles.contact());
-  return (
-    <Layout>
 
-      {/* Contact Section */}
-      <section className="py-32 md:py-48 bg-background">
-        <div className="container max-w-2xl">
-          <div className="mb-16">
-            <div className="inline-block mb-6 px-4 py-1 border border-foreground/30 rounded">
-              <span className="text-accent-mono text-foreground text-xs">CONTATO</span>
-            </div>
-            <h1 className="text-5xl sm:text-6xl md:text-7xl heading-display text-foreground mb-8 leading-tight">
-              Entre em contato conosco para saber mais!
+  return (
+    <Layout showCart>
+      <section className="container flex flex-col gap-10 py-12 md:gap-14 md:py-[72px]">
+        <div className="grid items-end gap-8 md:grid-cols-[7fr_5fr] md:gap-16">
+          <div className="flex min-w-0 flex-col gap-5">
+            <p className="lbl text-muted-foreground">Contato</p>
+            <h1 className="heading-display text-[40px] leading-[1.05] md:text-6xl">
+              Fale com a gente. O orçamento começa por uma conversa.
             </h1>
           </div>
+          <p className="min-w-0 text-[17px] leading-relaxed text-muted-foreground">
+            Mande uma foto, uma ideia ou as medidas do seu espaço. Respondemos de segunda a sexta, das 8h às 18h, e aos
+            sábados pela manhã.
+          </p>
+        </div>
 
-          {/* Contact Methods */}
-          <div className="space-y-8">
-            {/* WhatsApp */}
-            <div className="group relative">
-              <a href={WHATSAPP_LINK} target="_blank" rel="noopener noreferrer">
-                <div className="p-8 rounded-lg border border-border hover:border-foreground/30 transition-all duration-300 cursor-pointer">
-                  <div className="flex items-center gap-6">
-                    <div className="w-16 h-16 bg-foreground flex items-center justify-center rounded group-hover:bg-secondary transition-colors duration-300">
-                      <MessageCircle className="w-8 h-8 text-background" />
-                    </div>
-                    <div>
-                      <h3 className="heading-secondary text-2xl text-foreground mb-2">
-                        WhatsApp
-                      </h3>
-                      <p className="text-lg text-secondary hover:text-foreground transition-colors duration-300">
-                        (31) 97180-3551
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </a>
+        <div className="grid gap-6 md:grid-cols-2 md:gap-8">
+          <a href={WHATSAPP_LINK} target="_blank" rel="noopener noreferrer" className={CARD_LINK}>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <WhatsAppIcon className="h-9 w-9" />
+              <ResponseBadge className="border border-brand-green bg-transparent text-brand-green" />
             </div>
+            <h3 className="text-[28px] font-light">WhatsApp</h3>
+            <span className="text-[26px] font-light">{PHONE_DISPLAY}</span>
+            <span className="lbl mt-auto pt-2">Abrir conversa →</span>
+          </a>
 
-            {/* Instagram */}
-            <div className="group relative">
-              <a href="https://instagram.com/estudio.pedraindustrial" target="_blank" rel="noopener noreferrer">
-                <div className="p-8 rounded-lg border border-border hover:border-foreground/30 transition-all duration-300 cursor-pointer">
-                  <div className="flex items-center gap-6">
-                    <div className="w-16 h-16 bg-foreground flex items-center justify-center rounded group-hover:bg-secondary transition-colors duration-300">
-                      <Instagram className="w-8 h-8 text-background" />
-                    </div>
-                    <div>
-                      <h3 className="heading-secondary text-2xl text-foreground mb-2">
-                        Instagram
-                      </h3>
-                      <p className="text-lg text-secondary hover:text-foreground transition-colors duration-300">
-                        @estudio.pedraindustrial
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </a>
+          <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" className={CARD_LINK}>
+            <InstagramIcon className="h-9 w-9" />
+            <h3 className="text-[28px] font-light">Instagram</h3>
+            <span className="min-w-0 break-words text-[26px] font-light">{INSTAGRAM_HANDLE}</span>
+            <span className="lbl mt-auto pt-2">Ver as peças em casa →</span>
+          </a>
+
+          <div className={`${CARD} bg-card`}>
+            <LineIcon name="clock" className="h-9 w-9" />
+            <h3 className="text-[28px] font-light">Horário de atendimento</h3>
+            <div className="flex flex-col gap-1.5 text-[17px]">
+              {HOURS.map((h) => (
+                <span key={h}>{h}</span>
+              ))}
             </div>
           </div>
 
-          {/* Additional Info */}
-          <div className="mt-20 p-8 rounded-lg bg-card border border-border">
-            <h3 className="heading-secondary text-xl text-foreground mb-4">
-              Horário de Atendimento
-            </h3>
-            <div className="space-y-2 text-muted-foreground">
-              <p>Segunda a Sexta: 8h - 18h</p>
-              <p>Sábado: 9h - 12h</p>
-              <p>Domingo: Fechado</p>
+          <div className={`${CARD} bg-card`}>
+            <LineIcon name="pin" className="h-9 w-9" />
+            <h3 className="text-[28px] font-light">Nossa oficina</h3>
+            <div className="flex flex-col gap-1.5 text-[17px]">
+              {addressLines().map((l) => (
+                <span key={l}>{l}</span>
+              ))}
+              <span className="mt-2 text-[15px] leading-normal text-muted-foreground">
+                Fabricação própria. Atendemos, entregamos e instalamos em BH e região metropolitana. Outras cidades sob
+                consulta.
+              </span>
             </div>
-          </div>
-
-          {/* Back Button */}
-          <div className="mt-12">
-            <Link href="/">
-              <button className="heading-secondary text-sm text-foreground hover:text-secondary transition-colors duration-300 underline">
-                ← Voltar para o início
-              </button>
-            </Link>
           </div>
         </div>
-      </section>
 
+        <div
+          aria-hidden="true"
+          className="pattern-bg h-[120px] max-w-full"
+          style={{ ["--pattern-opacity" as string]: ".12" }}
+        />
+      </section>
     </Layout>
   );
 }

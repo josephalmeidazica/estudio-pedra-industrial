@@ -1,26 +1,24 @@
 import { Link } from "wouter";
-import { Button } from "@/components/ui/button";
 import { Layout } from "@/components/layout/Layout";
 import { usePageTitle } from "@/lib/usePageTitle";
 import { titles } from "@shared/seo-text";
+
+const BTN_BLACK =
+  "inline-flex h-[52px] items-center justify-center border border-foreground bg-foreground px-6 text-[13px] font-medium uppercase tracking-[0.12em] text-background hover:border-accent hover:bg-accent";
 
 export default function NotFound() {
   usePageTitle(titles.notFound());
   return (
     <Layout>
-      <section className="py-32 md:py-48 bg-background">
-        <div className="container max-w-2xl text-center">
-          <div className="inline-block mb-6 px-4 py-1 border border-foreground/30 rounded">
-            <span className="text-accent-mono text-foreground text-xs">ERRO 404</span>
-          </div>
-          <h1 className="text-5xl sm:text-6xl heading-display text-foreground mb-6">Página não encontrada</h1>
-          <p className="text-lg text-muted-foreground mb-12">
+      <section className="bg-background py-24 md:py-40">
+        <div className="container flex max-w-2xl flex-col items-center gap-6 text-center">
+          <p className="lbl text-muted-foreground">Erro 404</p>
+          <h1 className="heading-display text-[40px] leading-[1.05] md:text-6xl">Página não encontrada</h1>
+          <p className="text-[17px] leading-relaxed text-muted-foreground">
             O endereço que você acessou não existe ou foi movido.
           </p>
-          <Link href="/">
-            <Button className="bg-foreground text-background hover:bg-secondary text-sm px-8 py-3 rounded heading-secondary transition-all duration-300">
-              Voltar ao início
-            </Button>
+          <Link href="/" className={BTN_BLACK}>
+            Voltar ao início
           </Link>
         </div>
       </section>
