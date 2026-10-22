@@ -8,10 +8,16 @@ import { cn } from "@/lib/utils";
 import type { PublicProduct } from "@/lib/types";
 import { openWhatsApp, productQuoteMessage, whatsappUrl } from "@/lib/whatsapp";
 
-type Props = { product: Pick<PublicProduct, "id" | "name" | "slug" | "isCustom">; className?: string; hideIcon?: boolean };
+type Props = {
+  product: Pick<PublicProduct, "id" | "name" | "slug" | "isCustom">;
+  className?: string;
+  hideIcon?: boolean;
+  /** Overrides the "Pedir orçamento" label of a regular piece. */
+  label?: string;
+};
 
 /** Primary card action: opens WhatsApp with the product pre-filled. The custom piece asks for a description first. */
-export function QuoteButton({ product, className, hideIcon }: Props) {
+export function QuoteButton({ product, className, hideIcon, label }: Props) {
   const { setCustomer } = useCart();
   const [open, setOpen] = useState(false);
 
@@ -28,7 +34,7 @@ export function QuoteButton({ product, className, hideIcon }: Props) {
     <>
       <Button className={cn("w-full", className)} onClick={quote}>
         {hideIcon ? null : <MessageCircle className="mr-2 h-4 w-4" />}
-        {product.isCustom ? "Descrever meu móvel" : "Pedir orçamento"}
+        {product.isCustom ? "Descrever meu móvel" : (label ?? "Pedir orçamento")}
       </Button>
       {product.isCustom && (
         <CustomPieceDialog
