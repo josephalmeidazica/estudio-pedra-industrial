@@ -78,7 +78,7 @@ export function CartWidget() {
             <div className="flex-1 space-y-3 overflow-y-auto py-4">
               {available.map((line) => (
                 <div key={line.lineId} className="flex items-start gap-3">
-                  <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md border bg-muted">
+                  <div className="h-12 w-12 shrink-0 overflow-hidden border bg-muted">
                     {line.thumb ? (
                       <img src={line.thumb} alt={line.liveName} className="h-full w-full object-cover" />
                     ) : (
@@ -106,7 +106,7 @@ export function CartWidget() {
                       <Pencil className="h-3 w-3" />
                     </Button>
                   ) : (
-                    <div className="flex items-center rounded-md border">
+                    <div className="flex items-center border">
                       <Button
                         variant="ghost"
                         size="icon"
@@ -142,7 +142,7 @@ export function CartWidget() {
 
               {unavailable.map((line) => (
                 <div key={line.lineId} className="flex items-center gap-3 opacity-60">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md border bg-muted text-muted-foreground">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center border bg-muted text-muted-foreground">
                     <ImageOff className="h-4 w-4" />
                   </div>
                   <div className="min-w-0 flex-1">

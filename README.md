@@ -29,7 +29,7 @@ npm run check            # TypeScript type-check
 npm test                 # run the test suite
 npm run db:generate      # generate a Drizzle migration after editing server/db/schema.ts
 npm run images:reprocess # convert pre-pipeline image rows into WebP variants (after build)
-npm run og:image         # regenerate client/public/og-default.jpg from the logo
+npm run og:image         # regenerate client/public/og-default.jpg from the brand signature
 ```
 
 Deployment: [`DEPLOY.md`](./DEPLOY.md) (cheat-sheet) and [`VPS-SETUP.md`](./VPS-SETUP.md)
@@ -40,8 +40,16 @@ Deployment: [`DEPLOY.md`](./DEPLOY.md) (cheat-sheet) and [`VPS-SETUP.md`](./VPS-
 ## How it works
 
 - **Pages:** Home (`/`), Catálogo (`/catalogo`, filterable with `?categoria=<slug>`),
-  product detail (`/catalogo/<slug>`), Contato (`/contato`), Admin (`/admin`). Public
-  pages share one header (with a mobile menu), footer and a floating WhatsApp button.
+  product detail (`/catalogo/<slug>`, with a *Ficha técnica*), Processo (`/processo`),
+  Dúvidas frequentes (`/duvidas`, with `FAQPage` JSON-LD), Sobre nós (`/sobre`),
+  Contato (`/contato`, with the workshop address), Para profissionais
+  (`/para-profissionais`, **off by default**, see below), Admin (`/admin`) and a 404.
+  Public pages share one header (with a mobile menu), footer and a floating WhatsApp
+  button. The look follows the brand manual: Areia background, Bege panels, black
+  text, Cobre accents, square corners (`--radius: 0`), Outfit type.
+- **Para profissionais** answers the 404 page until `SITE.professionals` in
+  `shared/content/site.ts` is filled in (`lead`, `offers`, `steps`, `ctaTitle`,
+  `ctaText`). Once it is, the page, its header link and its sitemap entry appear.
 - **The quote flow:** every card and detail page has a one-tap "Pedir orçamento"
   WhatsApp button and an "Adicionar ao carrinho" option. The cart asks for the
   customer's name and bairro and opens WhatsApp with a message listing the chosen
@@ -49,12 +57,39 @@ Deployment: [`DEPLOY.md`](./DEPLOY.md) (cheat-sheet) and [`VPS-SETUP.md`](./VPS-
 - **"Móvel personalizado":** the catalog entry flagged *Personalizado* in the admin.
   Adding it asks for a short description of the piece the customer wants; the text
   travels into the message. At most one product carries the flag.
-- **Home page:** opens with the pieces marked *Destaque* (padded to six when fewer than
-  three are marked), then the "Na casa dos nossos clientes" strip of installed-piece
-  photos managed in the admin's **Ambientes** tab.
+- **Home page:** hero (headline, WhatsApp/portfólio buttons, illustration), a strip of
+  differentials, "O que fazemos", the pieces marked *Destaque* (padded to six when
+  fewer than three are marked), "Da conversa à entrega" (four steps), the Experiência
+  band with stats, the Instagram block, the "Na casa dos nossos clientes" strip of
+  installed-piece photos (admin's **Ambientes** tab) and a closing call to action.
+  Reviews, Instagram posts and the catalog PDF band only render once their content
+  exists (below).
+- **Product fields:** name, slug, category, description, materials, dimensions,
+  **acabamentos** (`finishes`, one line) and **detalhes** (`details`, one per line,
+  joined with " · "), price, flags. The *Ficha técnica* shows Medidas, Materiais,
+  Acabamentos, Detalhes, Prazo (once `SITE.leadTime` is set) and Garantia, skipping
+  empty rows. The editor has Acabamentos/Detalhes inputs (migration `drizzle/0005_*`).
+- **Content modules** live in `shared/content/`: `site.ts` (`SITE`: address, hours,
+  warranty, stats, `professionals`, `leadTime`, `catalogPdf`, `reviews`,
+  `instagramPosts`), `home.ts`, `processo.ts`, `faq.ts`, `sobre.ts`. **Rule: a null or
+  empty field hides its section** (no placeholders ship). To publish a block, fill the
+  field in `site.ts`; nothing else changes.
+- **Brand assets** are under `client/public/brand/` (signature, symbol, pattern) and
+  `client/public/brand/icons/` (per-piece line icons). Tokens are in
+  `client/src/index.css`; the font is Outfit (300/400/500) via Google Fonts in
+  `client/index.html`. `npm run og:image` builds the link-preview image from the
+  beige signature.
+- **Hero illustration:** the brand-pattern placeholder is
+  `client/src/components/home/HeroIllustration.tsx`; replace that component's content
+  with the final illustration.
+- **Phase 2 (not built):** moving `catalogPdf`, `reviews`, `instagramPosts` and the
+  numeric stats into an admin-editable `site_settings` table with a fourth admin tab
+  is specified in §4.12 of
+  `docs/superpowers/specs/2026-10-22-batch5-site-redesign-design.md`.
 - The catalog loads live from the API. Product data is seeded once on first boot
   (9 products) and then lives in SQLite.
-- The WhatsApp number lives in `client/src/config.ts`; the logo in `client/public/logo.png`.
+- The WhatsApp number lives in `client/src/config.ts`; the brand logos in
+  `client/public/brand/`.
 
 ## Backend / catalog
 
@@ -111,7 +146,7 @@ Built for the owner's phone: log in once, stay logged in for 30 days. Three tabs
 **Peças:** the list of pieces (reorder, edit, move to the Lixeira). "Nova peça" opens a
 photos-first editor (full-screen on phones): a hidden draft is created immediately, so
 photos picked from the camera roll (several at once, with progress) attach to it
-straight away; then name, category, description, materials/dimensions and, under
+straight away; then name, category, description, materials/dimensions, acabamentos/detalhes and, under
 "Mais opções", slug, price, *Destaque* and *Personalizado*. "Salvar" keeps it as a
 draft ("Rascunho"), "Publicar" puts it on the site and shows a "Ver no site" link.
 Closing an untouched "Nova peça" discards it. **Ambientes:** upload, caption, reorder

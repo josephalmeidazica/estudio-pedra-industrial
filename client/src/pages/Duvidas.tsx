@@ -68,7 +68,7 @@ export default function Duvidas() {
             >
               {t.items.map((item, i) => (
                 <AccordionItem key={item.q} value={`item-${i}`} className="border-card">
-                  <AccordionTrigger className="rounded-none py-5 text-[17px] font-normal leading-snug">
+                  <AccordionTrigger className="py-5 text-[17px] font-normal leading-snug">
                     <span className="min-w-0">{item.q}</span>
                   </AccordionTrigger>
                   <AccordionContent className="pr-8 text-[15px] leading-relaxed text-muted-foreground">

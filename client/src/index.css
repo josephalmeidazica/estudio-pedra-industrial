@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+@custom-variant dark (&:is(.dark *));
+
 /*
   Estúdio Pedra Industrial: tokens do manual de marca
   - Paleta: bege #EAE0CE, areia #D2B389, bronze #B37640, verde #1F3A30, concreto #828282
