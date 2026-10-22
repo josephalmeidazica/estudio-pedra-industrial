@@ -1,5 +1,6 @@
 // Pure SEO rendering: route resolution, <head> data, HTML tags, sitemap and
 // robots. No I/O here; server/page.ts wires it to Express and the database.
+import { SITE } from "../../shared/content/site";
 import { DEFAULT_DESCRIPTION, SITE_NAME, descriptions, titles } from "../../shared/seo-text";
 
 export type Route =
@@ -7,6 +8,10 @@ export type Route =
   | { kind: "catalog"; category: string | null }
   | { kind: "product"; slug: string }
   | { kind: "contact" }
+  | { kind: "process" }
+  | { kind: "faq" }
+  | { kind: "about" }
+  | { kind: "professionals" }
   | { kind: "admin" }
   | { kind: "unknown" };
 
@@ -62,6 +67,10 @@ export function resolveRoute(pathname: string, search: string): Route {
   const path = stripTrailingSlash(pathname || "/");
   if (path === "/" || path === "/index.html") return { kind: "home" };
   if (path === "/contato") return { kind: "contact" };
+  if (path === "/processo") return { kind: "process" };
+  if (path === "/duvidas") return { kind: "faq" };
+  if (path === "/sobre") return { kind: "about" };
+  if (path === "/para-profissionais") return { kind: "professionals" };
   if (path === "/admin") return { kind: "admin" };
   if (path === "/catalogo") {
     const params = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
@@ -102,6 +111,8 @@ type BuildArgs = {
   path: string;
   product?: ProductForHead | null;
   categoryLabel?: string | null;
+  /** Whether the "Para profissionais" page is live; defaults to the content flag. */
+  professionalsEnabled?: boolean;
 };
 
 function defaultImage(siteUrl: string): HeadImage {
@@ -126,8 +137,14 @@ function localBusiness(siteUrl: string): object {
     image: siteUrl + DEFAULT_IMAGE.path,
     description: DEFAULT_DESCRIPTION,
     telephone: PHONE,
-    address: { "@type": "PostalAddress", addressLocality: "Belo Horizonte", addressRegion: "MG", addressCountry: "BR" },
-    areaServed: "Belo Horizonte e região",
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: SITE.address.street,
+      addressLocality: "Belo Horizonte",
+      addressRegion: "MG",
+      addressCountry: "BR",
+    },
+    areaServed: SITE.serviceArea,
     sameAs: [INSTAGRAM_URL],
     openingHoursSpecification: [
       { "@type": "OpeningHoursSpecification", dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], opens: "08:00", closes: "18:00" },
@@ -162,7 +179,14 @@ function notFoundHead(siteUrl: string, path: string): HeadData {
   };
 }
 
-export function buildHead({ route, siteUrl, path, product, categoryLabel }: BuildArgs): HeadData {
+export function buildHead({
+  route,
+  siteUrl,
+  path,
+  product,
+  categoryLabel,
+  professionalsEnabled = SITE.professionals !== null,
+}: BuildArgs): HeadData {
   const base = {
     robots: "index, follow" as const,
     ogType: "website" as const,
@@ -197,6 +221,20 @@ export function buildHead({ route, siteUrl, path, product, categoryLabel }: Buil
     }
     case "contact":
       return { ...base, title: titles.contact(), description: descriptions.contact(), canonical: siteUrl + "/contato" };
+    case "process":
+      return { ...base, title: titles.process(), description: descriptions.process(), canonical: siteUrl + "/processo" };
+    case "faq":
+      return { ...base, title: titles.faq(), description: descriptions.faq(), canonical: siteUrl + "/duvidas" };
+    case "about":
+      return { ...base, title: titles.about(), description: descriptions.about(), canonical: siteUrl + "/sobre" };
+    case "professionals":
+      if (!professionalsEnabled) return notFoundHead(siteUrl, path);
+      return {
+        ...base,
+        title: titles.professionals(),
+        description: descriptions.professionals(),
+        canonical: siteUrl + "/para-profissionais",
+      };
     case "admin":
       return { ...base, title: titles.admin(), description: null, canonical: null, robots: "noindex, nofollow", image: null };
     case "unknown":
@@ -262,6 +300,19 @@ export function renderSitemap(siteUrl: string, entries: { path: string; lastmod?
     })
     .join("\n");
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
+}
+
+export function sitemapEntries(
+  products: { slug: string; updatedAt: Date }[],
+  professionalsEnabled: boolean
+): { path: string; lastmod?: Date }[] {
+  const paths = ["/", "/catalogo", "/processo", "/duvidas", "/sobre"];
+  if (professionalsEnabled) paths.push("/para-profissionais");
+  paths.push("/contato");
+  return [
+    ...paths.map((path) => ({ path })),
+    ...products.map((p) => ({ path: `/catalogo/${p.slug}`, lastmod: p.updatedAt })),
+  ];
 }
 
 export function renderRobots(siteUrl: string): string {

@@ -5,7 +5,8 @@ import type { DB } from "./db/client";
 import { listPublished } from "./db/products.repo";
 import { UPLOADS_DIR } from "./lib/images";
 import { ensureOgJpeg } from "./lib/ogImage";
-import { renderRobots, renderSitemap } from "./lib/seo";
+import { SITE } from "../shared/content/site";
+import { renderRobots, renderSitemap, sitemapEntries } from "./lib/seo";
 import { siteUrlFor } from "./page";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./trpc";
@@ -48,12 +49,7 @@ export function createApp(db: DB): Express {
     try {
       const site = siteUrlFor(req);
       const products = await listPublished(db);
-      const entries = [
-        { path: "/" },
-        { path: "/catalogo" },
-        { path: "/contato" },
-        ...products.map((p) => ({ path: `/catalogo/${p.slug}`, lastmod: p.updatedAt })),
-      ];
+      const entries = sitemapEntries(products, SITE.professionals !== null);
       res
         .set({ "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "public, max-age=3600" })
         .send(renderSitemap(site, entries));

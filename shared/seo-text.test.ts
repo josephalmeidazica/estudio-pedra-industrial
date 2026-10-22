@@ -25,7 +25,7 @@ test("firstSentence and truncateAtWord", () => {
 
 test("product description = first sentence + materials + tail, capped at 160", () => {
   expect(descriptions.product("Mesa urbana em aço carbono com design contemporâneo", "Aço carbono, MDF")).toBe(
-    "Mesa urbana em aço carbono com design contemporâneo. Materiais: Aço carbono, MDF. Sob medida em Belo Horizonte. Peça um orçamento pelo WhatsApp."
+    "Mesa urbana em aço carbono com design contemporâneo. Materiais: Aço carbono, MDF. Sob medida em Belo Horizonte e região metropolitana. Peça um orçamento pelo…"
   );
   expect(descriptions.product("", "")).toBe(DEFAULT_DESCRIPTION);
   expect(descriptions.product("x".repeat(200), "").length).toBeLessThanOrEqual(160);
@@ -36,6 +36,16 @@ test("product description = first sentence + materials + tail, capped at 160", (
     "Mesas, estantes, luminárias e peças sob medida em aço carbono e MDF. Veja o portfólio e peça um orçamento pelo WhatsApp."
   );
   expect(descriptions.contact()).toBe(
-    "Fale com o Estúdio Pedra Industrial pelo WhatsApp ou Instagram. Atendimento em Belo Horizonte."
+    "Fale com o Estúdio Pedra Industrial pelo WhatsApp ou Instagram. Atendimento em Belo Horizonte e região metropolitana."
   );
+});
+
+test("new titles and the metropolitan-region descriptions", () => {
+  expect(titles.process()).toBe("Processo — Estúdio Pedra Industrial");
+  expect(titles.faq()).toBe("Dúvidas frequentes — Estúdio Pedra Industrial");
+  expect(titles.about()).toBe("Sobre nós — Estúdio Pedra Industrial");
+  for (const d of [DEFAULT_DESCRIPTION, descriptions.contact(), descriptions.process(), descriptions.faq(), descriptions.about(), descriptions.professionals()]) {
+    expect(d.length).toBeLessThanOrEqual(160);
+  }
+  expect(DEFAULT_DESCRIPTION).toContain("região metropolitana");
 });

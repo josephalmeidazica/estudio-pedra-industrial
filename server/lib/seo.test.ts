@@ -9,6 +9,7 @@ import {
   renderRobots,
   renderSitemap,
   resolveRoute,
+  sitemapEntries,
   type ProductForHead,
 } from "./seo";
 
@@ -39,7 +40,7 @@ test("product head: title, description, canonical, JPEG cover, breadcrumb only",
   expect(h.status).toBe(200);
   expect(h.title).toBe("Mesa Urb — Estúdio Pedra Industrial");
   expect(h.description).toBe(
-    "Mesa urbana em aço carbono com design contemporâneo. Materiais: Aço carbono, MDF. Sob medida em Belo Horizonte. Peça um orçamento pelo WhatsApp."
+    "Mesa urbana em aço carbono com design contemporâneo. Materiais: Aço carbono, MDF. Sob medida em Belo Horizonte e região metropolitana. Peça um orçamento pelo…"
   );
   expect(h.canonical).toBe("https://example.com.br/catalogo/mesa-urb");
   expect(h.ogType).toBe("product");
@@ -136,4 +137,21 @@ test("sitemap, robots, normalizeSiteUrl", () => {
   expect(xml).toContain("<lastmod>2026-10-20</lastmod>");
   expect(renderRobots(site)).toBe("User-agent: *\nDisallow: /admin\nAllow: /\nSitemap: https://example.com.br/sitemap.xml\n");
   expect(normalizeSiteUrl("https://example.com.br//")).toBe("https://example.com.br");
+});
+
+test("new routes, titles, flagged professionals page, sitemap entries", () => {
+  expect(resolveRoute("/processo", "")).toEqual({ kind: "process" });
+  expect(resolveRoute("/duvidas/", "")).toEqual({ kind: "faq" });
+  expect(resolveRoute("/sobre", "")).toEqual({ kind: "about" });
+  expect(resolveRoute("/para-profissionais", "")).toEqual({ kind: "professionals" });
+  expect(buildHead({ route: { kind: "about" }, siteUrl: site, path: "/sobre" }).title).toBe("Sobre nós — Estúdio Pedra Industrial");
+  const off = buildHead({ route: { kind: "professionals" }, siteUrl: site, path: "/para-profissionais", professionalsEnabled: false });
+  expect([off.status, off.robots]).toEqual([404, "noindex, nofollow"]);
+  const on = buildHead({ route: { kind: "professionals" }, siteUrl: site, path: "/para-profissionais", professionalsEnabled: true });
+  expect([on.status, on.title]).toEqual([200, "Para profissionais — Estúdio Pedra Industrial"]);
+  expect(sitemapEntries([], false).map((e) => e.path)).toEqual(["/", "/catalogo", "/processo", "/duvidas", "/sobre", "/contato"]);
+  expect(sitemapEntries([], true).map((e) => e.path)).toContain("/para-profissionais");
+  const home = buildHead({ route: { kind: "home" }, siteUrl: site, path: "/" });
+  expect((home.jsonLd[0] as any).address.streetAddress).toBe("Rua João Gualberto dos Santos, 714");
+  expect((home.jsonLd[0] as any).areaServed).toBe("Belo Horizonte e região metropolitana");
 });
