@@ -3,6 +3,7 @@ import { ImageOff, MessageCircle, Minus, Pencil, Plus, ShoppingBag, Trash2 } fro
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ResponseBadge } from "@/components/ui/ResponseBadge";
 import { Separator } from "@/components/ui/separator";
 import {
   Sheet,
@@ -16,6 +17,7 @@ import { trpc } from "@/lib/trpc";
 import { useCart } from "./CartContext";
 import { totalCount } from "./cartReducer";
 import { CustomPieceDialog } from "./CustomPieceDialog";
+import { DeadlineChips } from "./DeadlineChips";
 import { resolveCartLines, toMessageLines, type ResolvedLine } from "./resolve";
 import { buildWhatsAppUrl } from "./whatsapp";
 
@@ -194,10 +196,27 @@ export function CartWidget() {
               value={customer.bairro}
               onChange={(e) => setCustomer({ bairro: e.target.value })}
             />
+            <label htmlFor="cart-customer-measurements" className="sr-only">
+              Medidas aproximadas
+            </label>
+            <Input
+              id="cart-customer-measurements"
+              placeholder="Medidas aproximadas (ex.: 120 × 60 cm, altura 75)"
+              value={customer.measurements ?? ""}
+              onChange={(e) => setCustomer({ measurements: e.target.value })}
+            />
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Para quando precisa?</p>
+              <DeadlineChips value={customer.deadline} onChange={(deadline) => setCustomer({ deadline })} />
+            </div>
+            <ResponseBadge className="self-start" />
             <Button className="w-full" disabled={!canCheckout} onClick={checkout}>
               <MessageCircle className="mr-2 h-4 w-4" />
               Finalizar pedido no WhatsApp
             </Button>
+            <p className="text-xs text-muted-foreground">
+              Preencha o bairro para enviar. Medidas e prazo são opcionais.
+            </p>
             {items.length > 0 && (
               <Button variant="ghost" className="w-full text-muted-foreground" onClick={clear}>
                 Limpar carrinho

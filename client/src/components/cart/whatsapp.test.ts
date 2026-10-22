@@ -22,6 +22,14 @@ test("message matches the PT-BR format exactly and trims the customer fields", (
   expect(buildWhatsAppMessage({ name: "  Maria ", bairro: " Savassi " }, lines)).toBe(EXPECTED);
 });
 
+test("optional fields appear between the items and the total, only when filled", () => {
+  const base = { name: "Maria", bairro: "Savassi" };
+  expect(buildWhatsAppMessage({ ...base, measurements: "  ", deadline: { kind: "data", when: " " } }, lines)).toBe(EXPECTED);
+  const full = buildWhatsAppMessage({ ...base, measurements: "120 × 60 cm", deadline: { kind: "ate-2-meses" } }, lines);
+  expect(full).toContain("Descrição: mesa de jantar 2 m\n\nMedidas aproximadas: 120 × 60 cm\nPara quando: Em até 2 meses\n\nTotal de itens: 3");
+  expect(buildWhatsAppMessage({ ...base, deadline: { kind: "data", when: "antes do Natal" } }, lines)).toContain("\n\nPara quando: antes do Natal\n\nTotal");
+});
+
 test("url targets the studio number with encoded text", () => {
   const url = buildWhatsAppUrl({ name: "Maria", bairro: "Savassi" }, lines);
   expect(url.startsWith("https://wa.me/5531971803551?text=")).toBe(true);

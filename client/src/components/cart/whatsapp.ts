@@ -1,6 +1,6 @@
 import { whatsappUrl } from "@/lib/whatsapp";
 import type { MessageLine } from "./resolve";
-import type { Customer } from "./storage";
+import { deadlineLabel, type Customer } from "./storage";
 
 export function buildWhatsAppMessage(customer: Customer, lines: MessageLine[]): string {
   const name = customer.name.trim();
@@ -13,9 +13,16 @@ export function buildWhatsAppMessage(customer: Customer, lines: MessageLine[]): 
     })
     .join("\n");
   const total = lines.reduce((sum, l) => sum + l.quantity, 0);
+  const measurements = customer.measurements?.trim();
+  const when = customer.deadline ? deadlineLabel(customer.deadline) : null;
+  const extras = [
+    measurements ? `Medidas aproximadas: ${measurements}` : null,
+    when ? `Para quando: ${when}` : null,
+  ].filter((l): l is string => l !== null);
   return (
     `Olá! Meu nome é ${name} e moro no bairro ${bairro}. Gostaria de um orçamento dos seguintes produtos do catálogo:\n\n` +
     `${body}\n\n` +
+    (extras.length > 0 ? `${extras.join("\n")}\n\n` : "") +
     `Total de itens: ${total}\n\n` +
     `Fico no aguardo. Obrigado(a)!`
   );
