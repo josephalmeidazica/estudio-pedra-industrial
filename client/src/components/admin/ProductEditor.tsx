@@ -245,7 +245,7 @@ export function ProductEditor({ open, onOpenChange, productId }: Props) {
           </div>
           <div className="space-y-1">
             <Label htmlFor="p-fin">Acabamentos</Label>
-            <Input id="p-fin" placeholder="Ex.: Pintura eletrostática preta fosca" value={form.finishes} onChange={(e) => set("finishes", e.target.value)} />
+            <Input id="p-fin" placeholder="Ex.: Pintura eletrostÃ¡tica preta fosca" value={form.finishes} onChange={(e) => set("finishes", e.target.value)} />
           </div>
           <div className="space-y-1">
             <Label htmlFor="p-det">Detalhes</Label>
