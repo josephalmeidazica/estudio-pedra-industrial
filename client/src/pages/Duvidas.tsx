@@ -44,7 +44,7 @@ export default function Duvidas() {
             <a
               key={t.slug}
               href={`#${t.slug}`}
-              className="inline-flex h-10 items-center border border-foreground px-4 text-sm hover:bg-card"
+              className="inline-flex h-11 items-center border border-foreground px-4 text-sm hover:bg-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground sm:h-10"
             >
               {t.theme}
             </a>

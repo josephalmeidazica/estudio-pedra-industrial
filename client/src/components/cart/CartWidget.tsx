@@ -47,7 +47,7 @@ export function CartWidget() {
       <Button
         variant="ghost"
         size="icon"
-        className="relative"
+        className="relative size-11 sm:size-9"
         aria-label="Abrir carrinho"
         onClick={() => setOpen(true)}
       >
@@ -183,6 +183,7 @@ export function CartWidget() {
             </label>
             <Input
               id="cart-customer-name"
+              className="h-11 sm:h-9"
               placeholder="Seu nome"
               value={customer.name}
               onChange={(e) => setCustomer({ name: e.target.value })}
@@ -192,6 +193,7 @@ export function CartWidget() {
             </label>
             <Input
               id="cart-customer-bairro"
+              className="h-11 sm:h-9"
               placeholder="Seu bairro (ex.: Savassi, Belo Horizonte)"
               value={customer.bairro}
               onChange={(e) => setCustomer({ bairro: e.target.value })}
@@ -201,6 +203,7 @@ export function CartWidget() {
             </label>
             <Input
               id="cart-customer-measurements"
+              className="h-11 sm:h-9"
               placeholder="Medidas aproximadas (ex.: 120 × 60 cm, altura 75)"
               value={customer.measurements ?? ""}
               onChange={(e) => setCustomer({ measurements: e.target.value })}
@@ -210,7 +213,7 @@ export function CartWidget() {
               <DeadlineChips value={customer.deadline} onChange={(deadline) => setCustomer({ deadline })} />
             </div>
             <ResponseBadge className="self-start" />
-            <Button className="w-full" disabled={!canCheckout} onClick={checkout}>
+            <Button className="h-11 w-full sm:h-9" disabled={!canCheckout} onClick={checkout}>
               <MessageCircle className="mr-2 h-4 w-4" />
               Finalizar pedido no WhatsApp
             </Button>

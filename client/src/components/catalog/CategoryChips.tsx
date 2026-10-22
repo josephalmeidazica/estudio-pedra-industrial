@@ -29,7 +29,7 @@ export function CategoryChips({ categories, active, onChange, total }: Props) {
             aria-pressed={isActive}
             onClick={() => onChange(c.slug)}
             className={cn(
-              "inline-flex h-10 shrink-0 items-center gap-2.5 whitespace-nowrap border border-foreground px-4 text-xs uppercase tracking-[0.12em] transition-colors",
+              "inline-flex h-11 shrink-0 items-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground sm:h-10 gap-2.5 whitespace-nowrap border border-foreground px-4 text-xs uppercase tracking-[0.12em] transition-colors",
               isActive ? "bg-foreground text-background" : "bg-transparent text-foreground hover:bg-card",
             )}
           >

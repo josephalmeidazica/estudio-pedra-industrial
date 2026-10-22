@@ -19,7 +19,7 @@ export function Layout({
   footerLinks?: { label: string; href: string }[];
 }) {
   return (
-    <div className="min-h-screen bg-background [--header-h:69px] lg:[--header-h:89px]">
+    <div className="min-h-screen bg-background [--header-h:69px] xl:[--header-h:89px]">
       <SiteHeader rightSlot={showCart ? <CartWidget /> : undefined} backHref={backHref} />
       {children}
       <WhatsAppFab hidden={fabHidden} />

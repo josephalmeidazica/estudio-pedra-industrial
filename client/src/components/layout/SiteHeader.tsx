@@ -27,7 +27,7 @@ export function navLinks(): { label: string; href: string }[] {
 export const NAV_LINKS = navLinks();
 
 const DESKTOP_LINK =
-  "heading-secondary text-foreground hover:text-accent transition-colors duration-300";
+  "heading-secondary whitespace-nowrap text-foreground hover:text-accent transition-colors duration-300";
 const MOBILE_LINK =
   "heading-secondary text-sm text-foreground hover:text-accent transition-colors duration-300 py-1";
 
@@ -61,7 +61,7 @@ export function SiteHeader({ rightSlot, backHref }: { rightSlot?: ReactNode; bac
               <Link
                 href={backHref}
                 aria-label="Voltar ao portfólio"
-                className="flex h-10 w-8 items-center justify-center text-xl text-foreground sm:hidden"
+                className="flex h-11 w-11 items-center justify-center text-xl text-foreground sm:hidden"
               >
                 <span aria-hidden="true">←</span>
               </Link>
@@ -80,8 +80,8 @@ export function SiteHeader({ rightSlot, backHref }: { rightSlot?: ReactNode; bac
             </Link>
           </div>
 
-          <div className="flex items-center gap-2 lg:gap-7">
-            <div className="hidden lg:flex items-center gap-7">
+          <div className="flex items-center gap-2 xl:gap-7">
+            <div className="hidden xl:flex items-center gap-7">
               {links.map((l) => (
                 <a key={l.href} href={l.href} className={DESKTOP_LINK}>
                   {l.label}
@@ -89,11 +89,11 @@ export function SiteHeader({ rightSlot, backHref }: { rightSlot?: ReactNode; bac
               ))}
             </div>
             {rightSlot}
-            <HeaderQuoteButton className="hidden lg:inline-flex" />
+            <HeaderQuoteButton className="hidden xl:inline-flex" />
             <Button
               variant="ghost"
               size="icon"
-              className="lg:hidden"
+              className="size-11 sm:size-9 xl:hidden"
               aria-label="Abrir menu"
               onClick={() => setOpen(true)}
             >

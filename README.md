@@ -60,10 +60,13 @@ Deployment: [`DEPLOY.md`](./DEPLOY.md) (cheat-sheet) and [`VPS-SETUP.md`](./VPS-
 - **Home page:** hero (headline, WhatsApp/portfólio buttons, illustration), a strip of
   differentials, "O que fazemos", the pieces marked *Destaque* (padded to six when
   fewer than three are marked), "Da conversa à entrega" (four steps), the Experiência
-  band with stats, the Instagram block, the "Na casa dos nossos clientes" strip of
-  installed-piece photos (admin's **Ambientes** tab) and a closing call to action.
-  Reviews, Instagram posts and the catalog PDF band only render once their content
-  exists (below).
+  band with stats, the Instagram block (handle and follow button always show; the post
+  grid only renders once `SITE.instagramPosts` has entries), the reviews section (only
+  once `SITE.reviews` is filled) and a closing call to action.
+- **Catálogo page extras:** below the grid, the "Na casa dos nossos clientes" strip of
+  installed-piece photos (admin's **Ambientes** tab) and the catalog PDF band. The band
+  always renders (its "Receber pelo WhatsApp" button); only the download button depends
+  on `SITE.catalogPdf` (below).
 - **Product fields:** name, slug, category, description, materials, dimensions,
   **acabamentos** (`finishes`, one line) and **detalhes** (`details`, one per line,
   joined with " · "), price, flags. The *Ficha técnica* shows Medidas, Materiais,

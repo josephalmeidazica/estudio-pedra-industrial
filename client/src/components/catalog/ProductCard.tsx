@@ -18,7 +18,7 @@ export function ProductCard({ product }: { product: PublicProduct }) {
     <article
       id={product.isCustom ? "sob-medida" : undefined}
       className={cn(
-        "flex min-w-0 scroll-mt-28 flex-col border border-border",
+        "flex h-full min-w-0 scroll-mt-28 flex-col border border-border",
         product.isCustom ? "border-dashed bg-card" : "bg-background",
       )}
     >
@@ -50,7 +50,7 @@ export function ProductCard({ product }: { product: PublicProduct }) {
         )}
       </Link>
 
-      <div className="flex flex-col gap-3 px-6 pb-7 pt-6">
+      <div className="flex flex-1 flex-col gap-3 px-6 pb-7 pt-6">
         <div className="flex items-center justify-between gap-3">
           <h3 className="text-2xl font-light text-foreground">
             <Link href={href} className="hover:text-accent">
@@ -60,8 +60,8 @@ export function ProductCard({ product }: { product: PublicProduct }) {
           {icon ? <ProductIcon src={icon} className="h-[22px] w-6 shrink-0 text-accent" /> : null}
         </div>
         {product.category ? <p className="lbl text-[10px] text-muted-foreground">{product.category}</p> : null}
-        <p className="text-[15px] leading-relaxed text-muted-foreground">{product.description}</p>
-        <div className="flex flex-col gap-2 pt-2">
+        <p className="line-clamp-2 text-[15px] leading-relaxed text-muted-foreground">{product.description}</p>
+        <div className="mt-auto flex flex-col gap-2 pt-2">
           <QuoteButton product={product} hideIcon className="h-11 text-xs font-medium uppercase tracking-[0.12em]" />
           <AddToCartButton
             product={product}
