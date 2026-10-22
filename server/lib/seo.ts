@@ -1,5 +1,6 @@
 // Pure SEO rendering: route resolution, <head> data, HTML tags, sitemap and
 // robots. No I/O here; server/page.ts wires it to Express and the database.
+import { FAQ } from "../../shared/content/faq";
 import { SITE } from "../../shared/content/site";
 import { DEFAULT_DESCRIPTION, SITE_NAME, descriptions, titles } from "../../shared/seo-text";
 
@@ -128,6 +129,20 @@ function coverImage(siteUrl: string, p: ProductForHead): HeadImage {
   return dims ? { url, ...dims, alt: p.name } : { url, alt: p.name };
 }
 
+export function faqJsonLd(faq: typeof FAQ): object {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faq.flatMap((t) =>
+      t.items.map(({ q, a }) => ({
+        "@type": "Question",
+        name: q,
+        acceptedAnswer: { "@type": "Answer", text: a },
+      })),
+    ),
+  };
+}
+
 function localBusiness(siteUrl: string): object {
   return {
     "@context": "https://schema.org",
@@ -224,7 +239,7 @@ export function buildHead({
     case "process":
       return { ...base, title: titles.process(), description: descriptions.process(), canonical: siteUrl + "/processo" };
     case "faq":
-      return { ...base, title: titles.faq(), description: descriptions.faq(), canonical: siteUrl + "/duvidas" };
+      return { ...base, title: titles.faq(), description: descriptions.faq(), canonical: siteUrl + "/duvidas", jsonLd: [faqJsonLd(FAQ)] };
     case "about":
       return { ...base, title: titles.about(), description: descriptions.about(), canonical: siteUrl + "/sobre" };
     case "professionals":

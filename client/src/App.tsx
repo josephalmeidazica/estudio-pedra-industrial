@@ -11,6 +11,7 @@ import Catalog from "./pages/Catalog";
 import Product from "./pages/Product";
 import Admin from "./pages/Admin";
 import Processo from "./pages/Processo";
+import Duvidas from "./pages/Duvidas";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -19,6 +20,7 @@ function Router() {
       <Route path={"/"} component={Home} />
       <Route path={"/contato"} component={Contact} />
       <Route path={"/processo"} component={Processo} />
+      <Route path={"/duvidas"} component={Duvidas} />
       <Route path={"/catalogo"} component={Catalog} />
       <Route path={"/catalogo/:slug"} component={Product} />
       <Route path={"/admin"} component={Admin} />

@@ -1,6 +1,7 @@
 import { expect, test } from "vitest";
 import {
   buildHead,
+  faqJsonLd,
   injectHead,
   normalizeSiteUrl,
   ogDimensions,
@@ -154,4 +155,18 @@ test("new routes, titles, flagged professionals page, sitemap entries", () => {
   const home = buildHead({ route: { kind: "home" }, siteUrl: site, path: "/" });
   expect((home.jsonLd[0] as any).address.streetAddress).toBe("Rua João Gualberto dos Santos, 714");
   expect((home.jsonLd[0] as any).areaServed).toBe("Belo Horizonte e região metropolitana");
+});
+
+test("faq head carries FAQPage JSON-LD and special characters survive HTML rendering", () => {
+  const real = buildHead({ route: { kind: "faq" }, siteUrl: site, path: "/duvidas" });
+  expect(real.jsonLd.map((j: any) => j["@type"])).toEqual(["FAQPage"]);
+  expect((real.jsonLd[0] as any).mainEntity.length).toBeGreaterThan(5);
+
+  const tricky = [{ theme: "T", slug: "t", items: [{ q: 'Vocês fazem <vidro> & "madeira"?', a: "Sim." }] }];
+  const ld = faqJsonLd(tricky as any) as any;
+  expect(ld.mainEntity[0].acceptedAnswer).toEqual({ "@type": "Answer", text: "Sim." });
+  const html = renderHeadHtml({ ...real, jsonLd: [ld] });
+  const script = /<script type="application\/ld\+json">([\s\S]*?)<\/script>/.exec(html)!;
+  expect(script[1]).not.toContain("<");
+  expect(JSON.parse(script[1]).mainEntity[0].name).toBe('Vocês fazem <vidro> & "madeira"?');
 });
