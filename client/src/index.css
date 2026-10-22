@@ -1,14 +1,10 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
-
-/* 
-  Design Philosophy: Estúdio Pedra Industrial - Minimalist Luxury
-  - Paleta oficial: Bege/areia quente, preto, tons naturais
-  - Tipografia: Montserrat (sans-serif geométrica e linear)
-  - Design sofisticado, espaçoso, premium
-  - Foco em aço carbono e MDF com elegância
+/*
+  Estúdio Pedra Industrial: tokens do manual de marca
+  - Paleta: bege #EAE0CE, areia #D2B389, bronze #B37640, verde #1F3A30, concreto #828282
+  - Tipografia: Outfit (300/400/500), cantos retos
 */
 
 @theme inline {
@@ -35,6 +31,8 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-brand-green: var(--brand-green);
+  --color-brand-concrete: var(--brand-concrete);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
@@ -51,75 +49,44 @@
 }
 
 :root {
-  /* Paleta Oficial Estúdio Pedra Industrial */
-  --primary: #000000; /* Preto */
-  --primary-foreground: #ffffff; /* Branco */
-  --sidebar-primary: #000000;
-  --sidebar-primary-foreground: #ffffff;
-  --chart-1: #000000;
-  --chart-2: #d2b389;
-  --chart-3: #d2b389;
-  --chart-4: #d2b389;
-  --chart-5: #000000;
-  --radius: 0.5rem; /* Cantos suavemente arredondados */
-  --background: #d2b389; /* Marrom (cor principal da marca) */
-  --foreground: #000000; /* Preto */
-  --card: #ffffff; /* Branco */
+  /* Paleta do manual de marca */
+  --background: #eae0ce;
+  --foreground: #000000;
+  --primary: #000000;
+  --primary-foreground: #eae0ce;
+  --card: #d2b389;
   --card-foreground: #000000;
-  --popover: #ffffff;
+  --popover: #eae0ce;
   --popover-foreground: #000000;
-  --secondary: #d2b389; /* Marrom */
+  --secondary: #d2b389;
   --secondary-foreground: #000000;
   --muted: #d2b389;
-  --muted-foreground: #000000;
-  --accent: #000000; /* Preto como accent */
-  --accent-foreground: #ffffff;
+  --muted-foreground: #3a3a3a;
+  --accent: #b37640;
+  --accent-foreground: #eae0ce;
   --destructive: #dc2626;
   --destructive-foreground: #ffffff;
-  --border: #d2b389; /* Bordas em marrom */
+  --border: #d2b389;
   --input: #d2b389;
   --ring: #000000;
-  --sidebar: #ffffff;
+  --brand-green: #1f3a30;
+  --brand-concrete: #828282;
+  --radius: 0px;
+  --font-sans: 'Outfit', system-ui, sans-serif;
+  /* Admin-only */
+  --chart-1: #000000;
+  --chart-2: #b37640;
+  --chart-3: #d2b389;
+  --chart-4: #1f3a30;
+  --chart-5: #828282;
+  --sidebar: #eae0ce;
   --sidebar-foreground: #000000;
-  --sidebar-accent: #000000;
-  --sidebar-accent-foreground: #ffffff;
+  --sidebar-primary: #000000;
+  --sidebar-primary-foreground: #eae0ce;
+  --sidebar-accent: #d2b389;
+  --sidebar-accent-foreground: #000000;
   --sidebar-border: #d2b389;
   --sidebar-ring: #000000;
-}
-
-.dark {
-  --primary: oklch(0.90 0.04 50);
-  --primary-foreground: oklch(0.25 0.01 280);
-  --sidebar-primary: oklch(0.90 0.04 50);
-  --sidebar-primary-foreground: oklch(0.25 0.01 280);
-  --background: oklch(0.20 0.01 280);
-  --foreground: oklch(0.88 0.03 50);
-  --card: oklch(0.25 0.02 280);
-  --card-foreground: oklch(0.88 0.03 50);
-  --popover: oklch(0.25 0.02 280);
-  --popover-foreground: oklch(0.88 0.03 50);
-  --secondary: oklch(0.30 0.02 280);
-  --secondary-foreground: oklch(0.85 0.05 50);
-  --muted: oklch(0.28 0.02 280);
-  --muted-foreground: oklch(0.70 0.04 50);
-  --accent: oklch(0.85 0.05 50);
-  --accent-foreground: oklch(0.25 0.01 280);
-  --destructive: oklch(0.65 0.22 25);
-  --destructive-foreground: oklch(0.95 0.02 50);
-  --border: oklch(0.30 0.02 280);
-  --input: oklch(0.30 0.02 280);
-  --ring: oklch(0.85 0.05 50);
-  --chart-1: oklch(0.85 0.05 50);
-  --chart-2: oklch(0.65 0.08 45);
-  --chart-3: oklch(0.55 0.06 45);
-  --chart-4: oklch(0.75 0.10 50);
-  --chart-5: oklch(0.35 0.02 280);
-  --sidebar: oklch(0.22 0.01 280);
-  --sidebar-foreground: oklch(0.88 0.03 50);
-  --sidebar-accent: oklch(0.85 0.05 50);
-  --sidebar-accent-foreground: oklch(0.25 0.01 280);
-  --sidebar-border: oklch(0.30 0.02 280);
-  --sidebar-ring: oklch(0.85 0.05 50);
 }
 
 @layer base {
@@ -128,14 +95,19 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Montserrat', sans-serif;
+    font-family: var(--font-sans);
     font-weight: 400;
-    letter-spacing: 0.5px;
+    font-size: 17px;
+    line-height: 1.6;
+  }
+  @media (max-width: 639px) {
+    body {
+      font-size: 16px;
+    }
   }
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Montserrat', sans-serif;
-    font-weight: 600;
-    letter-spacing: 0.8px;
+    font-family: var(--font-sans);
+    font-weight: 300;
     line-height: 1.2;
   }
   button:not(:disabled),
@@ -182,25 +154,53 @@
 
   /* Utilitários customizados para design minimalista sofisticado */
   .heading-display {
-    font-family: 'Montserrat', sans-serif;
-    font-weight: 700;
-    letter-spacing: 1px;
+    font-family: var(--font-sans);
+    font-weight: 300;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
   }
 
   .heading-secondary {
-    font-family: 'Montserrat', sans-serif;
-    font-weight: 600;
-    letter-spacing: 0.8px;
+    font-family: var(--font-sans);
+    font-weight: 500;
+    font-size: 12px;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
-    font-size: 0.875rem;
   }
 
-  .text-accent-mono {
-    font-family: 'Montserrat', sans-serif;
-    font-weight: 500;
-    letter-spacing: 1px;
-    font-size: 0.75rem;
+  .text-accent-mono,
+  .lbl {
+    font-family: var(--font-sans);
+    font-weight: 400;
+    font-size: 12px;
+    letter-spacing: 0.24em;
     text-transform: uppercase;
+  }
+
+  .prose-measure {
+    max-width: 65ch;
+  }
+
+  /* Ícone de produto: <span class="pi" style={{ "--pi": "url(/brand/icons/x.png)" }} /> */
+  .pi {
+    display: inline-block;
+    background: currentColor;
+    mask: var(--pi) center/contain no-repeat;
+    -webkit-mask: var(--pi) center/contain no-repeat;
+  }
+
+  /* Padrão da marca; filhos precisam de position: relative para ficar acima */
+  .pattern-bg {
+    position: relative;
+  }
+  .pattern-bg::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: url(/brand/pattern.png) repeat;
+    background-size: 420px auto;
+    opacity: var(--pattern-opacity, 0.12);
   }
 
   /* Linha decorativa minimalista */
