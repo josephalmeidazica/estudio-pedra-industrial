@@ -40,7 +40,7 @@ test("product head: title, description, canonical, JPEG cover, breadcrumb only",
   expect(h.status).toBe(200);
   expect(h.title).toBe("Mesa Urb — Estúdio Pedra Industrial");
   expect(h.description).toBe(
-    "Mesa urbana em aço carbono com design contemporâneo. Materiais: Aço carbono, MDF. Sob medida em Belo Horizonte e região metropolitana. Peça um orçamento pelo…"
+    "Mesa urbana em aço carbono com design contemporâneo. Materiais: Aço carbono, MDF. Sob medida em BH e região metropolitana. Peça um orçamento pelo WhatsApp."
   );
   expect(h.canonical).toBe("https://example.com.br/catalogo/mesa-urb");
   expect(h.ogType).toBe("product");

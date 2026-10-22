@@ -25,7 +25,7 @@ test("firstSentence and truncateAtWord", () => {
 
 test("product description = first sentence + materials + tail, capped at 160", () => {
   expect(descriptions.product("Mesa urbana em aço carbono com design contemporâneo", "Aço carbono, MDF")).toBe(
-    "Mesa urbana em aço carbono com design contemporâneo. Materiais: Aço carbono, MDF. Sob medida em Belo Horizonte e região metropolitana. Peça um orçamento pelo…"
+    "Mesa urbana em aço carbono com design contemporâneo. Materiais: Aço carbono, MDF. Sob medida em BH e região metropolitana. Peça um orçamento pelo WhatsApp."
   );
   expect(descriptions.product("", "")).toBe(DEFAULT_DESCRIPTION);
   expect(descriptions.product("x".repeat(200), "").length).toBeLessThanOrEqual(160);

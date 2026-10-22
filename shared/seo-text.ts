@@ -8,7 +8,7 @@ export const SITE_NAME = "Estúdio Pedra Industrial";
 export const DEFAULT_DESCRIPTION =
   "Móveis industriais sob medida em aço carbono e MDF, feitos em Belo Horizonte para BH e região metropolitana. Peça um orçamento pelo WhatsApp.";
 
-const PRODUCT_TAIL = "Sob medida em Belo Horizonte e região metropolitana. Peça um orçamento pelo WhatsApp.";
+const PRODUCT_TAIL = "Sob medida em BH e região metropolitana. Peça um orçamento pelo WhatsApp.";
 export const DESCRIPTION_MAX = 160;
 
 export const titles = {
