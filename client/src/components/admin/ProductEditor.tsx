@@ -105,6 +105,8 @@ export function ProductEditor({ open, onOpenChange, productId }: Props) {
       category: product.category,
       materials: product.materials,
       dimensions: product.dimensions,
+      finishes: product.finishes,
+      details: product.details,
       price: product.price == null ? "" : String(product.price),
       featured: product.featured,
       isCustom: product.isCustom,
@@ -240,6 +242,14 @@ export function ProductEditor({ open, onOpenChange, productId }: Props) {
               <Label htmlFor="p-dim">Dimensões</Label>
               <Input id="p-dim" placeholder="Ex.: 120 × 60 × 75 cm" value={form.dimensions} onChange={(e) => set("dimensions", e.target.value)} />
             </div>
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="p-fin">Acabamentos</Label>
+            <Input id="p-fin" placeholder="Ex.: Pintura eletrost�tica preta fosca" value={form.finishes} onChange={(e) => set("finishes", e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="p-det">Detalhes</Label>
+            <Textarea id="p-det" rows={3} placeholder="Um detalhe por linha" value={form.details} onChange={(e) => set("details", e.target.value)} />
           </div>
 
           <Collapsible open={moreOpen} onOpenChange={setMoreOpen}>

@@ -6,6 +6,8 @@ export const emptyForm = {
   category: "",
   materials: "",
   dimensions: "",
+  finishes: "",
+  details: "",
   price: "",
   featured: false,
   isCustom: false,
@@ -18,6 +20,8 @@ export type ProductPatch = {
   category: string;
   materials: string;
   dimensions: string;
+  finishes: string;
+  details: string;
   price: number | null;
   featured: boolean;
   isCustom: boolean;
@@ -46,6 +50,8 @@ export function buildProductPatch(
     category: form.category.trim(),
     materials: form.materials,
     dimensions: form.dimensions,
+    finishes: form.finishes,
+    details: form.details,
     price,
     featured: form.featured,
     isCustom: form.isCustom,
