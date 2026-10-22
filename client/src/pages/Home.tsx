@@ -11,7 +11,7 @@ import { Layout } from "@/components/layout/Layout";
 import { WHATSAPP_LINK } from "@/lib/whatsapp";
 import { Link } from "wouter";
 import { ProductCard } from "@/components/catalog/ProductCard";
-import { AmbientesStrip } from "@/components/home/AmbientesStrip";
+import { InstalledStrip } from "@/components/catalog/InstalledStrip";
 import { selectFeatured } from "@/lib/featured";
 import { trpc } from "@/lib/trpc";
 import { usePageTitle } from "@/lib/usePageTitle";
@@ -121,7 +121,7 @@ Nossa criatividade está em unir estética industrial, funcionalidade e inovaç�
         </div>
       </section>
 
-      <AmbientesStrip />
+      <InstalledStrip />
 
       {/* Services Section */}
       <section id="servicos" className="py-32 bg-background">
