@@ -181,3 +181,10 @@ test("gallery router: public list, admin add/update/delete with variant cleanup"
   await admin.trash.purge({ kind: "gallery", id: g.id });
   expect(uploads()).toEqual([]);
 });
+
+test("products.create accepts finishes and details", async () => {
+  const db = freshDb();
+  const admin = appRouter.createCaller(ctxFor(db, "test-token"));
+  const ok = await admin.products.create({ name: "Y", finishes: "Preto", details: "d" });
+  expect([ok.finishes, ok.details]).toEqual(["Preto", "d"]);
+});

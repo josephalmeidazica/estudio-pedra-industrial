@@ -20,3 +20,9 @@ test("publish flag and price parsing", () => {
   expect(buildProductPatch({ ...form, price: "1200" }, live, { slugDirty: false, publish: true })).toMatchObject({ price: 1200, published: true });
   expect(buildProductPatch({ ...form, price: "abc" }, live, { slugDirty: false })).toBeNull();
 });
+
+test("finishes and details travel in the patch", () => {
+  const form = { ...emptyForm, name: "Mesa", finishes: "Preto", details: "a\nb" };
+  expect(buildProductPatch(form, live, { slugDirty: false })).toMatchObject({ finishes: "Preto", details: "a\nb" });
+  expect(buildProductPatch(emptyForm, live, { slugDirty: false })).toMatchObject({ finishes: "", details: "" });
+});

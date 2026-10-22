@@ -3,6 +3,7 @@ import { ImageOff, MessageCircle, Minus, Pencil, Plus, ShoppingBag, Trash2 } fro
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ResponseBadge } from "@/components/ui/ResponseBadge";
 import { Separator } from "@/components/ui/separator";
 import {
   Sheet,
@@ -16,6 +17,7 @@ import { trpc } from "@/lib/trpc";
 import { useCart } from "./CartContext";
 import { totalCount } from "./cartReducer";
 import { CustomPieceDialog } from "./CustomPieceDialog";
+import { DeadlineChips } from "./DeadlineChips";
 import { resolveCartLines, toMessageLines, type ResolvedLine } from "./resolve";
 import { buildWhatsAppUrl } from "./whatsapp";
 
@@ -45,13 +47,13 @@ export function CartWidget() {
       <Button
         variant="ghost"
         size="icon"
-        className="relative"
+        className="relative size-11 sm:size-9"
         aria-label="Abrir carrinho"
         onClick={() => setOpen(true)}
       >
         <ShoppingBag className="h-5 w-5" />
         {count > 0 && (
-          <Badge className="absolute -right-1 -top-1 h-5 min-w-5 justify-center rounded-full px-1 text-xs">
+          <Badge className="absolute -right-1 -top-1 h-5 min-w-5 justify-center rounded-full bg-accent px-1 text-xs text-accent-foreground">
             {count}
           </Badge>
         )}
@@ -76,7 +78,7 @@ export function CartWidget() {
             <div className="flex-1 space-y-3 overflow-y-auto py-4">
               {available.map((line) => (
                 <div key={line.lineId} className="flex items-start gap-3">
-                  <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md border bg-muted">
+                  <div className="h-12 w-12 shrink-0 overflow-hidden border bg-muted">
                     {line.thumb ? (
                       <img src={line.thumb} alt={line.liveName} className="h-full w-full object-cover" />
                     ) : (
@@ -104,7 +106,7 @@ export function CartWidget() {
                       <Pencil className="h-3 w-3" />
                     </Button>
                   ) : (
-                    <div className="flex items-center rounded-md border">
+                    <div className="flex items-center border">
                       <Button
                         variant="ghost"
                         size="icon"
@@ -140,7 +142,7 @@ export function CartWidget() {
 
               {unavailable.map((line) => (
                 <div key={line.lineId} className="flex items-center gap-3 opacity-60">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md border bg-muted text-muted-foreground">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center border bg-muted text-muted-foreground">
                     <ImageOff className="h-4 w-4" />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -181,6 +183,7 @@ export function CartWidget() {
             </label>
             <Input
               id="cart-customer-name"
+              className="h-11 sm:h-9"
               placeholder="Seu nome"
               value={customer.name}
               onChange={(e) => setCustomer({ name: e.target.value })}
@@ -190,14 +193,33 @@ export function CartWidget() {
             </label>
             <Input
               id="cart-customer-bairro"
+              className="h-11 sm:h-9"
               placeholder="Seu bairro (ex.: Savassi, Belo Horizonte)"
               value={customer.bairro}
               onChange={(e) => setCustomer({ bairro: e.target.value })}
             />
-            <Button className="w-full" disabled={!canCheckout} onClick={checkout}>
+            <label htmlFor="cart-customer-measurements" className="sr-only">
+              Medidas aproximadas
+            </label>
+            <Input
+              id="cart-customer-measurements"
+              className="h-11 sm:h-9"
+              placeholder="Medidas aproximadas (ex.: 120 × 60 cm, altura 75)"
+              value={customer.measurements ?? ""}
+              onChange={(e) => setCustomer({ measurements: e.target.value })}
+            />
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Para quando precisa?</p>
+              <DeadlineChips value={customer.deadline} onChange={(deadline) => setCustomer({ deadline })} />
+            </div>
+            <ResponseBadge className="self-start" />
+            <Button className="h-11 w-full sm:h-9" disabled={!canCheckout} onClick={checkout}>
               <MessageCircle className="mr-2 h-4 w-4" />
               Finalizar pedido no WhatsApp
             </Button>
+            <p className="text-xs text-muted-foreground">
+              Preencha o bairro para enviar. Medidas e prazo são opcionais.
+            </p>
             {items.length > 0 && (
               <Button variant="ghost" className="w-full text-muted-foreground" onClick={clear}>
                 Limpar carrinho

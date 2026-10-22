@@ -10,9 +10,11 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ResponseBadge } from "@/components/ui/ResponseBadge";
 import { Textarea } from "@/components/ui/textarea";
 import { useCart } from "./CartContext";
-import type { Customer } from "./storage";
+import { DeadlineChips } from "./DeadlineChips";
+import type { Customer, Deadline } from "./storage";
 
 export const NOTE_MAX = 500;
 
@@ -31,6 +33,8 @@ export function CustomPieceDialog({ open, onOpenChange, mode, initialNote = "", 
   const [note, setNote] = useState(initialNote);
   const [name, setName] = useState(customer.name);
   const [bairro, setBairro] = useState(customer.bairro);
+  const [measurements, setMeasurements] = useState(customer.measurements ?? "");
+  const [deadline, setDeadline] = useState<Deadline | undefined>(customer.deadline);
 
   // Reset the fields every time the dialog opens.
   useEffect(() => {
@@ -38,8 +42,10 @@ export function CustomPieceDialog({ open, onOpenChange, mode, initialNote = "", 
       setNote(initialNote);
       setName(customer.name);
       setBairro(customer.bairro);
+      setMeasurements(customer.measurements ?? "");
+      setDeadline(customer.deadline);
     }
-  }, [open, initialNote, customer.name, customer.bairro]);
+  }, [open, initialNote, customer.name, customer.bairro, customer.measurements, customer.deadline]);
 
   const askCustomer = mode === "quote";
   const canConfirm =
@@ -47,7 +53,11 @@ export function CustomPieceDialog({ open, onOpenChange, mode, initialNote = "", 
 
   const confirm = () => {
     if (!canConfirm) return;
-    onConfirm(askCustomer ? { note: note.trim(), customer: { name, bairro } } : { note: note.trim() });
+    onConfirm(
+      askCustomer
+        ? { note: note.trim(), customer: { name, bairro, measurements, deadline } }
+        : { note: note.trim() }
+    );
     onOpenChange(false);
   };
 
@@ -76,6 +86,7 @@ export function CustomPieceDialog({ open, onOpenChange, mode, initialNote = "", 
             <p className="text-right text-xs text-muted-foreground">
               {note.length}/{NOTE_MAX}
             </p>
+            {askCustomer && <p className="text-xs text-muted-foreground">Medidas aproximadas ajudam muito.</p>}
           </div>
           {askCustomer && (
             <>
@@ -92,6 +103,20 @@ export function CustomPieceDialog({ open, onOpenChange, mode, initialNote = "", 
                   onChange={(e) => setBairro(e.target.value)}
                 />
               </div>
+              <div className="space-y-1">
+                <Label htmlFor="custom-measurements">Medidas aproximadas</Label>
+                <Input
+                  id="custom-measurements"
+                  placeholder="Ex.: 120 × 60 cm, altura 75"
+                  value={measurements}
+                  onChange={(e) => setMeasurements(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Para quando precisa?</p>
+                <DeadlineChips value={deadline} onChange={setDeadline} />
+              </div>
+              <ResponseBadge />
             </>
           )}
         </div>

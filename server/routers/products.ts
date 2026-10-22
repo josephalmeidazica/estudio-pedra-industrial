@@ -11,6 +11,8 @@ const createInput = z.object({
   category: z.string().optional(),
   materials: z.string().optional(),
   dimensions: z.string().optional(),
+  finishes: z.string().optional(),
+  details: z.string().optional(),
   price: z.number().nullable().optional(),
   featured: z.boolean().optional(),
   isCustom: z.boolean().optional(),

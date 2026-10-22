@@ -134,3 +134,12 @@ test("discardEmptyDraft keeps a draft whose only photo is in the Lixeira (its fi
   expect(await repo.discardEmptyDraft(db, d.id)).toBe(false);
   expect(await repo.listAll(db)).toHaveLength(1);
 });
+
+test("finishes and details round-trip; defaults are empty", async () => {
+  const db = freshDb();
+  const a = await repo.createProduct(db, { name: "Mesa" });
+  expect([a.finishes, a.details]).toEqual(["", ""]);
+  const b = await repo.updateProduct(db, a.id, { finishes: "Preto fosco", details: "Base em C\nSapatas" });
+  expect(b!.finishes).toBe("Preto fosco");
+  expect((await repo.listPublished(db))[0].details).toBe("Base em C\nSapatas");
+});

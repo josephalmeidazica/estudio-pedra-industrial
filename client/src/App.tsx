@@ -10,6 +10,10 @@ import Contact from "./pages/Contact";
 import Catalog from "./pages/Catalog";
 import Product from "./pages/Product";
 import Admin from "./pages/Admin";
+import Processo from "./pages/Processo";
+import Duvidas from "./pages/Duvidas";
+import Sobre from "./pages/Sobre";
+import ParaProfissionais from "./pages/ParaProfissionais";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -17,6 +21,10 @@ function Router() {
     <Switch>
       <Route path={"/"} component={Home} />
       <Route path={"/contato"} component={Contact} />
+      <Route path={"/processo"} component={Processo} />
+      <Route path={"/duvidas"} component={Duvidas} />
+      <Route path={"/sobre"} component={Sobre} />
+      <Route path={"/para-profissionais"} component={ParaProfissionais} />
       <Route path={"/catalogo"} component={Catalog} />
       <Route path={"/catalogo/:slug"} component={Product} />
       <Route path={"/admin"} component={Admin} />
@@ -26,11 +34,6 @@ function Router() {
     </Switch>
   );
 }
-
-// NOTE: About Theme
-// - First choose a default theme according to your design style (dark or light bg), than change color palette in index.css
-//   to keep consistent foreground/background color across components
-// - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
 
 function App() {
   return (

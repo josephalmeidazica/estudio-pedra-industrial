@@ -5,7 +5,41 @@ export const CART_KEY = "eps_cart_v2";
 export const LEGACY_CART_KEY = "eps_cart";
 export const CUSTOMER_KEY = "eps_customer";
 
-export type Customer = { name: string; bairro: string };
+export type Deadline =
+  | { kind: "sem-pressa" }
+  | { kind: "ate-1-mes" }
+  | { kind: "ate-2-meses" }
+  | { kind: "data"; when: string };
+
+export type Customer = { name: string; bairro: string; measurements?: string; deadline?: Deadline };
+
+/** Text for the WhatsApp message; null when there is nothing to say (empty free-form date). */
+export function deadlineLabel(d: Deadline): string | null {
+  switch (d.kind) {
+    case "sem-pressa":
+      return "Sem pressa";
+    case "ate-1-mes":
+      return "Em até 1 mês";
+    case "ate-2-meses":
+      return "Em até 2 meses";
+    case "data":
+      return d.when.trim() || null;
+  }
+}
+
+function parseDeadline(v: unknown): Deadline | undefined {
+  if (!isRecord(v)) return undefined;
+  switch (v.kind) {
+    case "sem-pressa":
+    case "ate-1-mes":
+    case "ate-2-meses":
+      return { kind: v.kind };
+    case "data":
+      return typeof v.when === "string" ? { kind: "data", when: v.when } : undefined;
+    default:
+      return undefined;
+  }
+}
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
@@ -41,10 +75,14 @@ export function parseStoredCustomer(raw: string | null): Customer {
   try {
     const v: unknown = JSON.parse(raw);
     if (!isRecord(v)) return empty;
-    return {
+    const customer: Customer = {
       name: typeof v.name === "string" ? v.name : "",
       bairro: typeof v.bairro === "string" ? v.bairro : "",
     };
+    if (typeof v.measurements === "string") customer.measurements = v.measurements;
+    const deadline = parseDeadline(v.deadline);
+    if (deadline) customer.deadline = deadline;
+    return customer;
   } catch {
     return empty;
   }
