@@ -94,18 +94,43 @@ export function ProductViewer({ product, index, onIndexChange, onClose }: Props)
     return () => window.removeEventListener("keydown", onKey);
   });
 
-  // Desktop: lock page scroll, move focus into the dialog and give it back on close.
+  // Both layouts: lock page scroll, move focus in, loop Tab inside the viewer, give focus back on close.
   useEffect(() => {
-    if (!desktop) return;
     const opener = document.activeElement as HTMLElement | null;
     const overflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    dialogRef.current?.focus();
+    const raf = requestAnimationFrame(() => document.querySelector<HTMLElement>("[data-viewer-focus]")?.focus());
+    const onTab = (e: KeyboardEvent) => {
+      if (e.key !== "Tab") return;
+      const all = Array.from(document.querySelectorAll<HTMLElement>("[data-product-viewer]"));
+      // Radix pulls focus back into the sheet once it is inside, so the loop stays in the sheet from there.
+      const sheet = (document.activeElement as HTMLElement | null)?.closest<HTMLElement>("[role='dialog'][data-product-viewer]");
+      const roots = sheet && all.length > 1 ? [sheet] : all;
+      const items = roots.flatMap((r) =>
+        Array.from(r.querySelectorAll<HTMLElement>("button, a[href], input, textarea, select, [tabindex]:not([tabindex='-1'])")).filter(
+          (el) => !el.hasAttribute("disabled") && el.offsetParent !== null,
+        ),
+      );
+      if (items.length === 0) return;
+      const current = document.activeElement as HTMLElement | null;
+      const at = current ? items.indexOf(current) : -1;
+      // Leave nested dialogs (custom-piece form) to their own focus handling.
+      if (current?.closest("[role='dialog']:not([data-product-viewer])")) return;
+      // The photo layer and the sheet are not adjacent in the DOM, so step through them by hand.
+      const step = e.shiftKey ? -1 : 1;
+      const next = at === -1 ? (e.shiftKey ? items.length - 1 : 0) : (at + step + items.length) % items.length;
+      e.preventDefault();
+      e.stopPropagation();
+      items[next].focus();
+    };
+    document.addEventListener("keydown", onTab, true);
     return () => {
+      cancelAnimationFrame(raf);
+      document.removeEventListener("keydown", onTab, true);
       document.body.style.overflow = overflow;
       opener?.focus?.();
     };
-  }, [desktop]);
+  }, []);
 
   if (!image) return null;
   const alt = `${product.name}, foto ${index + 1} de ${images.length}`;
@@ -125,6 +150,7 @@ export function ProductViewer({ product, index, onIndexChange, onClose }: Props)
       <div className="fixed inset-0 z-50 bg-black/70">
         <div
           ref={dialogRef}
+          data-viewer-focus=""
           role="dialog"
           aria-modal="true"
           aria-labelledby="ficha-title"
@@ -180,7 +206,7 @@ export function ProductViewer({ product, index, onIndexChange, onClose }: Props)
     <>
       <div className="fixed inset-0 z-50 bg-black" data-product-viewer="">
         <div className="absolute inset-x-2 top-2 z-10 flex items-center justify-between">
-          <button type="button" onClick={onClose} aria-label="Fechar" className={iconBtn}>
+          <button type="button" data-viewer-focus="" onClick={onClose} aria-label="Fechar" className={iconBtn}>
             <X className="h-5 w-5" />
           </button>
           <span className="lbl text-border">
@@ -205,7 +231,9 @@ export function ProductViewer({ product, index, onIndexChange, onClose }: Props)
       >
         <DrawerContent
           data-product-viewer=""
-          className="h-[100dvh] border-t-2 border-border bg-background outline-none data-[vaul-drawer-direction=bottom]:mt-0 data-[vaul-drawer-direction=bottom]:max-h-none data-[vaul-drawer-direction=bottom]:rounded-none [&>div:first-child]:hidden"
+          aria-modal="true"
+          style={{ borderRadius: 0 }}
+          className="h-[100dvh] border-t-2 border-border bg-background outline-none data-[vaul-drawer-direction=bottom]:mt-0 data-[vaul-drawer-direction=bottom]:max-h-none [&>div:first-child]:hidden"
         >
           <div className="flex shrink-0 justify-center pt-2" aria-hidden="true">
             <span className="h-[3px] w-10 bg-muted-foreground" />
