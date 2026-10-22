@@ -9,6 +9,8 @@ export const products = sqliteTable("products", {
   category: text("category").notNull().default(""),
   materials: text("materials").notNull().default(""),
   dimensions: text("dimensions").notNull().default(""),
+  finishes: text("finishes").notNull().default(""),
+  details: text("details").notNull().default(""),
   price: real("price"),
   featured: integer("featured", { mode: "boolean" }).notNull().default(false),
   // The "Móvel personalizado" entry: adding it asks for a description. At most

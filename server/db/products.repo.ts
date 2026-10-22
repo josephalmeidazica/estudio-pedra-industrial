@@ -73,6 +73,8 @@ export type CreateProductInput = {
   category?: string;
   materials?: string;
   dimensions?: string;
+  finishes?: string;
+  details?: string;
   price?: number | null;
   featured?: boolean;
   isCustom?: boolean;
@@ -107,6 +109,8 @@ export async function createProduct(db: DB, input: CreateProductInput): Promise<
       category: input.category ?? "",
       materials: input.materials ?? "",
       dimensions: input.dimensions ?? "",
+      finishes: input.finishes ?? "",
+      details: input.details ?? "",
       price: input.price ?? null,
       featured: input.featured ?? false,
       isCustom: input.isCustom ?? false,
@@ -128,7 +132,7 @@ export async function updateProduct(
   const values: Record<string, unknown> = { updatedAt: new Date() };
   const fields = [
     "name", "description", "category", "materials",
-    "dimensions", "price", "featured", "isCustom", "published", "sortOrder",
+    "dimensions", "finishes", "details", "price", "featured", "isCustom", "published", "sortOrder",
   ] as const;
   for (const k of fields) if (patch[k] !== undefined) values[k] = patch[k];
 
