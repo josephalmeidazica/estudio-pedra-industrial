@@ -12,6 +12,9 @@ export function whatsappUrl(text: string): string {
 export const GENERIC_QUOTE_MESSAGE =
   "Olá! Vim pelo site do Estúdio Pedra Industrial e gostaria de um orçamento.";
 
+/** Opens WhatsApp asking for the PDF catalogue. */
+export const CATALOG_MESSAGE = "Olá! Gostaria de receber o catálogo em PDF do Estúdio Pedra Industrial.";
+
 /** One-tap quote for a single product. `catalogUrl` is absolute. */
 export function productQuoteMessage(productName: string, catalogUrl: string): string {
   return (

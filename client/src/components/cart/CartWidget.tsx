@@ -51,7 +51,7 @@ export function CartWidget() {
       >
         <ShoppingBag className="h-5 w-5" />
         {count > 0 && (
-          <Badge className="absolute -right-1 -top-1 h-5 min-w-5 justify-center rounded-full px-1 text-xs">
+          <Badge className="absolute -right-1 -top-1 h-5 min-w-5 justify-center rounded-full bg-accent px-1 text-xs text-accent-foreground">
             {count}
           </Badge>
         )}

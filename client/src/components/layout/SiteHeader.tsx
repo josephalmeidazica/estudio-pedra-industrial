@@ -1,75 +1,99 @@
 import { useState, type ReactNode } from "react";
-import { Menu, MessageCircle } from "lucide-react";
+import { Menu } from "lucide-react";
 import { Link } from "wouter";
+import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { GENERIC_QUOTE_MESSAGE, whatsappUrl } from "@/lib/whatsapp";
+import { SITE } from "@shared/content/site";
 
-export const NAV_LINKS: { label: string; href: string }[] = [
-  { label: "Início", href: "/" },
-  { label: "Serviços", href: "/#servicos" },
-  { label: "Sobre", href: "/#sobre" },
-  { label: "Portfólio", href: "/catalogo" },
-  { label: "Contato", href: "/contato" },
-];
+/** Single source of the site navigation, used by the header and the footer. */
+export function navLinks(): { label: string; href: string }[] {
+  return [
+    { label: "Início", href: "/" },
+    { label: "Portfólio", href: "/catalogo" },
+    { label: "Processo", href: "/processo" },
+    { label: "Sobre nós", href: "/sobre" },
+    { label: "Dúvidas", href: "/duvidas" },
+    ...(SITE.professionals !== null
+      ? [{ label: "Para profissionais", href: "/para-profissionais" }]
+      : []),
+    { label: "Contato", href: "/contato" },
+  ];
+}
+
+/** Kept for compatibility with older imports. */
+export const NAV_LINKS = navLinks();
 
 const DESKTOP_LINK =
-  "heading-secondary text-sm text-foreground hover:text-secondary transition-colors duration-300";
+  "heading-secondary text-foreground hover:text-accent transition-colors duration-300";
 const MOBILE_LINK =
-  "heading-secondary text-base text-foreground hover:text-secondary transition-colors duration-300";
+  "heading-secondary text-sm text-foreground hover:text-accent transition-colors duration-300 py-1";
 
 function HeaderQuoteButton({ className }: { className?: string }) {
   return (
-    <a href={whatsappUrl(GENERIC_QUOTE_MESSAGE)} target="_blank" rel="noopener noreferrer">
-      <Button
-        className={cn(
-          "bg-foreground text-background hover:bg-secondary text-sm px-6 py-2 rounded heading-secondary transition-all duration-300 flex items-center gap-2",
-          className
-        )}
-      >
-        <MessageCircle className="w-4 h-4" />
-        Faça um Orçamento
-      </Button>
-    </a>
+    <Button
+      asChild
+      className={cn(
+        "bg-foreground text-background hover:bg-brand-green heading-secondary gap-2 px-5 transition-colors duration-300",
+        className
+      )}
+    >
+      <a href={whatsappUrl(GENERIC_QUOTE_MESSAGE)} target="_blank" rel="noopener noreferrer">
+        <WhatsAppIcon className="h-4 w-4" />
+        Pedir orçamento
+      </a>
+    </Button>
   );
 }
 
-export function SiteHeader({ rightSlot }: { rightSlot?: ReactNode }) {
+export function SiteHeader({ rightSlot, backHref }: { rightSlot?: ReactNode; backHref?: string }) {
   const [open, setOpen] = useState(false);
+  const links = navLinks();
 
   return (
     <header className="border-b border-border bg-background sticky top-0 z-50">
       <div className="container">
-        <nav className="flex items-center justify-between py-6">
-          <Link href="/">
-            <div className="flex items-center gap-3 hover:opacity-80 transition-opacity duration-300 cursor-pointer">
+        <nav className="flex items-center justify-between py-4 lg:py-5" aria-label="Principal">
+          <div className="flex items-center gap-3">
+            {backHref && (
+              <Link
+                href={backHref}
+                aria-label="Voltar ao portfólio"
+                className="flex h-10 w-8 items-center justify-center text-xl text-foreground sm:hidden"
+              >
+                <span aria-hidden="true">←</span>
+              </Link>
+            )}
+            <Link href="/" aria-label="Estúdio Pedra Industrial, página inicial" className="flex items-center gap-3 hover:opacity-80 transition-opacity duration-300">
               <img
-                src="/logo.png"
-                alt="Estúdio Pedra Industrial Logo"
-                className="w-12 h-12 object-contain"
+                src="/brand/simbolo-preto.png"
+                alt=""
+                className="h-8 w-auto lg:h-10"
               />
-              <div>
-                <p className="heading-secondary text-sm font-bold text-foreground">Estúdio Pedra</p>
-                <p className="text-xs text-accent-mono text-muted-foreground">INDUSTRIAL</p>
-              </div>
-            </div>
-          </Link>
+              <img
+                src="/brand/tipografico-preto.png"
+                alt=""
+                className={cn("h-6 w-auto lg:h-[30px]", backHref && "hidden sm:block")}
+              />
+            </Link>
+          </div>
 
-          <div className="flex items-center gap-3 md:gap-12">
-            <div className="hidden md:flex items-center gap-12">
-              {NAV_LINKS.map((l) => (
+          <div className="flex items-center gap-2 lg:gap-7">
+            <div className="hidden lg:flex items-center gap-7">
+              {links.map((l) => (
                 <a key={l.href} href={l.href} className={DESKTOP_LINK}>
                   {l.label}
                 </a>
               ))}
-              <HeaderQuoteButton />
             </div>
             {rightSlot}
+            <HeaderQuoteButton className="hidden lg:inline-flex" />
             <Button
               variant="ghost"
               size="icon"
-              className="md:hidden"
+              className="lg:hidden"
               aria-label="Abrir menu"
               onClick={() => setOpen(true)}
             >
@@ -80,16 +104,16 @@ export function SiteHeader({ rightSlot }: { rightSlot?: ReactNode }) {
       </div>
 
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="right" className="w-full sm:max-w-sm">
+        <SheetContent side="right" className="w-full sm:max-w-sm bg-background">
           <SheetTitle className="sr-only">Menu</SheetTitle>
           <SheetDescription className="sr-only">Navegação do site</SheetDescription>
-          <nav className="mt-12 flex flex-col gap-6 px-6">
-            {NAV_LINKS.map((l) => (
+          <nav className="mt-12 flex flex-col gap-5 px-6" aria-label="Menu">
+            {links.map((l) => (
               <a key={l.href} href={l.href} className={MOBILE_LINK} onClick={() => setOpen(false)}>
                 {l.label}
               </a>
             ))}
-            <HeaderQuoteButton className="w-full justify-center" />
+            <HeaderQuoteButton className="mt-2 w-full justify-center" />
           </nav>
         </SheetContent>
       </Sheet>
