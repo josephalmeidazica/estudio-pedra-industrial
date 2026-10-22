@@ -4,7 +4,11 @@
 */
 
 import { Layout } from "@/components/layout/Layout";
+import { Avaliacoes } from "@/components/home/Avaliacoes";
+import { ChamadaFinal } from "@/components/home/ChamadaFinal";
 import { ComoFunciona } from "@/components/home/ComoFunciona";
+import { Experiencia } from "@/components/home/Experiencia";
+import { InstagramFeed } from "@/components/home/InstagramFeed";
 import { Destaques } from "@/components/home/Destaques";
 import { Diferenciais } from "@/components/home/Diferenciais";
 import { Hero } from "@/components/home/Hero";
@@ -23,7 +27,10 @@ export default function Home() {
       <Servicos products={products} />
       <Destaques products={products} />
       <ComoFunciona />
-      {/* Task 11: Experiencia, InstagramFeed, Avaliacoes, ChamadaFinal */}
+      <Experiencia />
+      <InstagramFeed />
+      <Avaliacoes />
+      <ChamadaFinal />
     </Layout>
   );
 }
