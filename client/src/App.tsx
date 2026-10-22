@@ -12,6 +12,8 @@ import Product from "./pages/Product";
 import Admin from "./pages/Admin";
 import Processo from "./pages/Processo";
 import Duvidas from "./pages/Duvidas";
+import Sobre from "./pages/Sobre";
+import ParaProfissionais from "./pages/ParaProfissionais";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -21,6 +23,8 @@ function Router() {
       <Route path={"/contato"} component={Contact} />
       <Route path={"/processo"} component={Processo} />
       <Route path={"/duvidas"} component={Duvidas} />
+      <Route path={"/sobre"} component={Sobre} />
+      <Route path={"/para-profissionais"} component={ParaProfissionais} />
       <Route path={"/catalogo"} component={Catalog} />
       <Route path={"/catalogo/:slug"} component={Product} />
       <Route path={"/admin"} component={Admin} />
