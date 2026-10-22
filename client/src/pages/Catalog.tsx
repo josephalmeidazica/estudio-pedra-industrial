@@ -45,7 +45,7 @@ export default function Catalog() {
       </section>
 
       {categories.length > 0 && (
-        <section className="sticky top-[69px] z-10 border-y border-border bg-background py-3 sm:static sm:z-auto sm:border-b-0 sm:py-0">
+        <section className="sticky top-[var(--header-h)] z-10 border-y border-border bg-background py-3 sm:static sm:z-auto sm:border-b-0 sm:py-0">
           <div className="container flex flex-col gap-3.5 sm:pb-10 sm:pt-6">
             <span className="lbl hidden text-muted-foreground sm:block">Tipo de peça</span>
             <CategoryChips categories={categories} active={activeKnown} onChange={onCategory} total={products.length} />

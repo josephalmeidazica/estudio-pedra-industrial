@@ -55,7 +55,7 @@ export function SiteHeader({ rightSlot, backHref }: { rightSlot?: ReactNode; bac
   return (
     <header className="border-b border-border bg-background sticky top-0 z-50">
       <div className="container">
-        <nav className="flex items-center justify-between py-4 lg:py-5" aria-label="Principal">
+        <nav className="flex h-[calc(var(--header-h)-1px)] items-center justify-between" aria-label="Principal">
           <div className="flex items-center gap-3">
             {backHref && (
               <Link
