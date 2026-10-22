@@ -3,6 +3,7 @@
   Título, filtro por tipo de peça com ícones, grade de cards, faixa de peças instaladas e faixa do catálogo em PDF.
 */
 
+import { useEffect } from "react";
 import { Link, useLocation, useSearch } from "wouter";
 import { SITE } from "@shared/content/site";
 import { trpc } from "@/lib/trpc";
@@ -25,6 +26,14 @@ export default function Catalog() {
   const activeKnown = active !== null && categories.some((c) => c.slug === active) ? active : null;
   const activeLabel = categories.find((c) => c.slug === activeKnown)?.label;
   usePageTitle(activeLabel ? titles.category(activeLabel) : titles.catalog());
+
+  // Client-side navigation does not honour `#hash`: scroll to it once the cards exist.
+  const hasProducts = products.length > 0;
+  useEffect(() => {
+    const id = window.location.hash.slice(1);
+    if (!id || !hasProducts) return;
+    document.getElementById(id)?.scrollIntoView();
+  }, [hasProducts]);
 
   const onCategory = (slug: string | null) =>
     setLocation(slug ? `/catalogo?categoria=${slug}` : "/catalogo", { replace: true });

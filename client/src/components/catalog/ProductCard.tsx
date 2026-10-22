@@ -18,7 +18,7 @@ export function ProductCard({ product }: { product: PublicProduct }) {
     <article
       id={product.isCustom ? "sob-medida" : undefined}
       className={cn(
-        "flex min-w-0 flex-col border border-border",
+        "flex min-w-0 scroll-mt-28 flex-col border border-border",
         product.isCustom ? "border-dashed bg-card" : "bg-background",
       )}
     >
