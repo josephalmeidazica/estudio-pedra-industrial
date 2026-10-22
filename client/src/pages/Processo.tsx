@@ -61,7 +61,7 @@ export default function Processo() {
               } ${i === 0 ? "" : "border-t border-card"}`}
             >
               <div className={flip ? "md:order-2" : ""}>
-                <StepPanel icon={s.icon} tag={s.tag} />
+                <StepPanel icon={s.icon} />
               </div>
               <div className={`flex min-w-0 flex-col items-start gap-5 ${flip ? "md:order-1" : ""}`}>
                 <span className="text-[64px] font-light leading-none text-card md:text-[88px]">

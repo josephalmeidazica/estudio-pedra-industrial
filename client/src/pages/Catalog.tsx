@@ -44,9 +44,9 @@ export default function Catalog() {
         <Link href="/" className="lbl text-muted-foreground hover:text-accent">
           ← Voltar ao início
         </Link>
-        <div className="grid items-end gap-6 md:grid-cols-[7fr_5fr] md:gap-16">
-          <h1 className="heading-display text-5xl text-foreground md:text-6xl">Portfólio de peças</h1>
-          <p className="text-[17px] leading-relaxed text-muted-foreground">
+        <div className="flex flex-col gap-5">
+          <h1 className="heading-display text-5xl text-foreground md:text-6xl">Portfólio de produtos</h1>
+          <p className="max-w-[640px] text-[17px] leading-relaxed text-muted-foreground">
             Explore a nossa coleção de móveis industriais. Além das peças deste portfólio, fazemos projetos
             personalizados sob medida: descreva o móvel que você imagina.
           </p>

@@ -25,7 +25,7 @@ export default function Duvidas() {
           <div className="flex min-w-0 flex-col gap-5">
             <p className="lbl text-muted-foreground">Dúvidas frequentes</p>
             <h1 className="heading-display text-[40px] leading-[1.05] md:text-6xl">
-              O que mais perguntam antes de pedir um orçamento.
+              O que mais perguntam antes de fechar um projeto?
             </h1>
           </div>
           <div className="flex min-w-0 flex-col items-start gap-5">
