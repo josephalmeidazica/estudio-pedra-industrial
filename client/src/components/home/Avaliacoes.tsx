@@ -14,6 +14,7 @@ export function Avaliacoes() {
           <div className="flex min-w-0 flex-col gap-2 border border-brand-concrete px-6 py-4">
             <div className="flex items-center gap-3">
               <span className="text-[32px] font-light leading-none">{reviews.rating}</span>
+              <span className="sr-only">nota {reviews.rating} de 5</span>
               <span className="text-accent" aria-hidden="true">★★★★★</span>
             </div>
             <a

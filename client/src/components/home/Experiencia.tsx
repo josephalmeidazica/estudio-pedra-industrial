@@ -10,8 +10,8 @@ export function Experiencia() {
           <p className="lbl text-brand-concrete">Experiência e garantia</p>
           <h2 className="heading-display text-[34px] leading-[1.1] lg:text-[52px]">Quem faz, responde pela peça.</h2>
           <p className="max-w-[520px] text-base leading-relaxed text-brand-concrete">
-            Cada peça é projetada, produzida e entregue por quem assina o trabalho. Se algo sair diferente do combinado, a
-            gente resolve.
+            Fabricação própria em Belo Horizonte, projeto aprovado por você antes do corte e garantia em todas as peças
+            que saem do estúdio.
           </p>
           <Link
             href="/processo"

@@ -55,6 +55,7 @@ export function InstagramFeed() {
                     <iframe
                       src={src}
                       loading="lazy"
+                      referrerPolicy="strict-origin-when-cross-origin"
                       title="Publicação no Instagram"
                       className="absolute inset-0 h-full w-full border-0"
                     />
