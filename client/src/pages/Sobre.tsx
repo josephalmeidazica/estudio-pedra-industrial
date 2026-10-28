@@ -33,7 +33,6 @@ export default function Sobre() {
   const pillars = [
     { label: "Missão", text: pilares.missao },
     { label: "Visão", text: pilares.visao },
-    { label: "Valores", text: pilares.valores },
   ];
 
   return (
@@ -97,7 +96,7 @@ export default function Sobre() {
             <p className="lbl text-card">Pilares</p>
             <h2 className="heading-display text-[34px] leading-[1.1] md:text-5xl">Missão, visão e valores</h2>
           </div>
-          <div className="grid gap-8 md:grid-cols-3 md:gap-10">
+          <div className="grid gap-8 md:grid-cols-2 md:gap-10">
             {pillars.map((p) => (
               <div key={p.label} className="flex min-w-0 flex-col gap-4 border-t border-background/40 pt-5">
                 <h3 className="lbl text-card">{p.label}</h3>
@@ -105,15 +104,22 @@ export default function Sobre() {
               </div>
             ))}
           </div>
-          <ol className="m-0 grid list-none gap-8 p-0 md:grid-cols-3 md:gap-10">
-            {valoresDetalhe.map((v) => (
-              <li key={v.n} className="flex min-w-0 flex-col gap-3 border-t border-background/40 pt-5">
-                <span className="text-[44px] font-light leading-none text-card">{v.n}</span>
-                <h3 className="text-2xl font-light">{v.title}</h3>
-                <p className="text-[15px] leading-relaxed text-card">{v.text}</p>
-              </li>
-            ))}
-          </ol>
+          {/* The three values belong to "Valores", so they sit inside its block rather than beside Missão and Visão. */}
+          <div className="flex flex-col gap-8 border-t border-background/40 pt-5">
+            <div className="flex flex-col gap-4">
+              <h3 className="lbl text-card">Valores</h3>
+              <p className="max-w-[640px] text-base leading-relaxed">{pilares.valores}</p>
+            </div>
+            <ol className="m-0 grid list-none gap-8 p-0 md:grid-cols-3 md:gap-10">
+              {valoresDetalhe.map((v) => (
+                <li key={v.n} className="flex min-w-0 flex-col gap-3">
+                  <span className="text-[44px] font-light leading-none text-card">{v.n}</span>
+                  <h4 className="text-2xl font-light">{v.title}</h4>
+                  <p className="text-[15px] leading-relaxed text-card">{v.text}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
         </div>
       </section>
 

@@ -1,6 +1,6 @@
 /*
   Estúdio Pedra Industrial - Página de Contato
-  Abertura, quatro cartões (WhatsApp, Instagram, horário, oficina) e faixa de padrão.
+  Abertura, quatro cartões (WhatsApp, Instagram, horário, oficina) em xadrez claro/escuro e faixa de padrão.
 */
 
 import { HOURS, INSTAGRAM_HANDLE, INSTAGRAM_URL, PHONE_DISPLAY, addressLines } from "@shared/content/site";
@@ -14,7 +14,8 @@ import { WHATSAPP_LINK } from "@/lib/whatsapp";
 import { usePageTitle } from "@/lib/usePageTitle";
 
 const CARD = "flex min-w-0 flex-col gap-5 border border-card p-6 md:p-9";
-const CARD_LINK = `${CARD} bg-background hover:bg-card`;
+const LIGHT = "bg-background";
+const DARK = "bg-card";
 
 export default function Contact() {
   usePageTitle(titles.contact());
@@ -36,7 +37,7 @@ export default function Contact() {
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 md:gap-8">
-          <a href={WHATSAPP_LINK} target="_blank" rel="noopener noreferrer" className={CARD_LINK}>
+          <a href={WHATSAPP_LINK} target="_blank" rel="noopener noreferrer" className={`${CARD} ${LIGHT} hover:bg-card`}>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <WhatsAppIcon className="h-9 w-9" />
               <ResponseBadge className="border border-brand-green bg-transparent text-brand-green" />
@@ -46,14 +47,14 @@ export default function Contact() {
             <span className="lbl mt-auto pt-2">Abrir conversa →</span>
           </a>
 
-          <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" className={CARD_LINK}>
+          <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" className={`${CARD} ${DARK} hover:bg-background`}>
             <InstagramIcon className="h-9 w-9" />
             <h3 className="text-[28px] font-light">Instagram</h3>
             <span className="min-w-0 break-words text-[26px] font-light">{INSTAGRAM_HANDLE}</span>
             <span className="lbl mt-auto pt-2">Ver as peças em casa →</span>
           </a>
 
-          <div className={`${CARD} bg-card`}>
+          <div className={`${CARD} ${DARK}`}>
             <LineIcon name="clock" className="h-9 w-9" />
             <h3 className="text-[28px] font-light">Horário de atendimento</h3>
             <div className="flex flex-col gap-1.5 text-[17px]">
@@ -63,7 +64,7 @@ export default function Contact() {
             </div>
           </div>
 
-          <div className={`${CARD} bg-card`}>
+          <div className={`${CARD} ${LIGHT}`}>
             <LineIcon name="pin" className="h-9 w-9" />
             <h3 className="text-[28px] font-light">Nossa oficina</h3>
             <div className="flex flex-col gap-1.5 text-[17px]">

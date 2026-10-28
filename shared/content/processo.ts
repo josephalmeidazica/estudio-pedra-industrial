@@ -4,7 +4,6 @@ export type ProcessStep = {
   homeTitle?: string;
   inHome: boolean;
   icon: "whatsapp" | "ruler" | "pencil-ruler" | "wrench" | "truck";
-  tag: string;
   lead: string;
   summary: string;
   bullets: string[];
@@ -21,7 +20,6 @@ export const PROCESSO: { intro: { title: string; text: string }; steps: ProcessS
       title: "Conversa",
       inHome: true,
       icon: "whatsapp",
-      tag: "Conversa pelo WhatsApp",
       lead: "Você manda pelo WhatsApp uma foto de referência, uma ideia ou as medidas do espaço. Pode ser uma peça do portfólio ou algo do zero.",
       summary: "Você manda uma foto, uma ideia ou as medidas pelo WhatsApp. Respondemos em horário comercial.",
       bullets: [
@@ -35,7 +33,6 @@ export const PROCESSO: { intro: { title: string; text: string }; steps: ProcessS
       title: "Medidas",
       inHome: false,
       icon: "ruler",
-      tag: "Medidas no local ou pelo guia",
       lead: "Para Belo Horizonte e região metropolitana, podemos medir no local. Fora disso, orientamos você a medir e conferimos tudo antes do projeto.",
       summary: "Medimos no local em BH e região, ou orientamos você a medir.",
       bullets: [
@@ -50,7 +47,6 @@ export const PROCESSO: { intro: { title: string; text: string }; steps: ProcessS
       homeTitle: "Projeto",
       inHome: true,
       icon: "pencil-ruler",
-      tag: "Desenho e orçamento para aprovar",
       lead: "Desenhamos a peça para o seu espaço e fechamos materiais, acabamento e valor. Nada é cortado antes da sua aprovação.",
       summary: "Desenhamos a peça para o seu espaço e alinhamos materiais, acabamento e valor.",
       bullets: [
@@ -64,7 +60,6 @@ export const PROCESSO: { intro: { title: string; text: string }; steps: ProcessS
       title: "Fabricação",
       inHome: true,
       icon: "wrench",
-      tag: "Corte, solda, pintura e acabamento",
       lead: "Corte, solda, pintura e acabamento feitos no nosso estúdio em Belo Horizonte. Você recebe fotos do andamento pelo WhatsApp.",
       summary: "Corte, solda, pintura e acabamento feitos no nosso estúdio, peça por peça.",
       bullets: [
@@ -79,7 +74,6 @@ export const PROCESSO: { intro: { title: string; text: string }; steps: ProcessS
       homeTitle: "Entrega",
       inHome: true,
       icon: "truck",
-      tag: "Entrega e instalação agendadas",
       lead: "Entregamos e, quando a peça pede, instalamos em BH e região metropolitana. Outras cidades sob consulta.",
       summary: "Combinamos a entrega e, se precisar, a instalação. Garantia de 3 meses.",
       bullets: [

@@ -17,7 +17,7 @@ test("no illustrative [bracketed] text in any content module", () => {
   for (const s of strings([SITE, PROCESSO, FAQ, HOME, SOBRE])) expect(s, s).not.toMatch(BRACKET);
 });
 
-test("processo: five steps with icons and tags, four on the home with Projeto shortened", () => {
+test("processo: five steps with icons, four on the home with Projeto shortened", () => {
   expect(PROCESSO.steps.map((s) => s.n)).toEqual(["01", "02", "03", "04", "05"]);
   expect(PROCESSO.steps.map((s) => s.icon)).toEqual(["whatsapp", "ruler", "pencil-ruler", "wrench", "truck"]);
   expect(homeSteps().map((s) => s.homeTitle ?? s.title)).toEqual(["Conversa", "Projeto", "Fabricação", "Entrega"]);

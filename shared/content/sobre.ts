@@ -20,7 +20,7 @@ export const SOBRE = {
     { n: "03", title: "Criatividade", text: "Soluções que combinam design, técnica e funcionalidade em projetos personalizados." },
   ] as { n: "01" | "02" | "03"; title: string; text: string }[],
   oficina: {
-    title: "Onde as peças nascem" as const,
+    title: "Onde estamos" as const,
     atendemos: "Fabricação própria. Atendemos, entregamos e instalamos em BH e região metropolitana. Outras cidades sob consulta.",
   },
   cta: {
