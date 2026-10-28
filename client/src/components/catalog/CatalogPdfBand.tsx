@@ -1,13 +1,13 @@
 import { SITE } from "@shared/content/site";
 import { CATALOG_MESSAGE, whatsappUrl } from "@/lib/whatsapp";
 
-/** Black band that offers the PDF catalogue; the download button exists only once a PDF is published. */
+/** Verde Pedra band (kept apart from the black footer) that offers the PDF catalogue; the download button exists only once a PDF is published. */
 export function CatalogPdfBand() {
   const pdf = SITE.catalogPdf;
   const meta =
     pdf && pdf.sizeLabel && pdf.updatedLabel ? `PDF · ${pdf.sizeLabel} · atualizado em ${pdf.updatedLabel}` : null;
   return (
-    <section id="catalogo" className="bg-foreground py-[72px] text-background">
+    <section id="catalogo" className="bg-brand-green py-[72px] text-background">
       <div className="container flex flex-wrap items-center justify-between gap-12">
         <div className="flex min-w-0 max-w-[640px] flex-col gap-3.5">
           <p className="lbl text-border">Catálogo</p>

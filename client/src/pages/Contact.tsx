@@ -27,7 +27,7 @@ export default function Contact() {
           <div className="flex min-w-0 flex-col gap-5">
             <p className="lbl text-muted-foreground">Contato</p>
             <h1 className="heading-display text-[40px] leading-[1.05] md:text-6xl">
-              Fale com a gente. O orçamento começa por uma conversa.
+              Fale com a gente. O projeto começa pelo diálogo.
             </h1>
           </div>
           <p className="min-w-0 text-[17px] leading-relaxed text-muted-foreground">
@@ -78,13 +78,10 @@ export default function Contact() {
             </div>
           </div>
         </div>
-
-        <div
-          aria-hidden="true"
-          className="pattern-bg h-[120px] max-w-full"
-          style={{ ["--pattern-opacity" as string]: ".12" }}
-        />
       </section>
+
+      {/* Faixa do grafismo da marca, de ponta a ponta, como divisória antes do rodapé. */}
+      <div aria-hidden="true" className="pattern-bg h-[120px] w-full" style={{ ["--pattern-opacity" as string]: ".12" }} />
     </Layout>
   );
 }

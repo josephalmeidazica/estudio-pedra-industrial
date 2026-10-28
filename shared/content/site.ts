@@ -18,11 +18,7 @@ export const SITE = {
   serviceArea: "Belo Horizonte e região metropolitana",
   address: { street: "Rua João Gualberto dos Santos, 714", district: "Céu Azul", city: "Belo Horizonte — MG" },
   professionals: null as null | ProfessionalsContent,
-  leadTime: null as string | null,
-  stats: [
-    { value: "3 meses", label: "de garantia contra defeitos de fabricação" },
-    { value: "100%", label: "das peças com projeto aprovado antes de produzir" },
-  ] as { value: string; label: string }[],
+  leadTime: "2 a 5 semanas, conforme o projeto" as string | null,
   catalogPdf: null as null | { url: string; sizeLabel?: string; updatedLabel?: string },
   reviews: null as null | {
     rating: string;
