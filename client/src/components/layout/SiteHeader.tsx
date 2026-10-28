@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { GENERIC_QUOTE_MESSAGE, whatsappUrl } from "@/lib/whatsapp";
-import { SITE } from "@shared/content/site";
 
 /** Single source of the site navigation, used by the header and the footer. */
 export function navLinks(): { label: string; href: string }[] {
@@ -16,9 +15,7 @@ export function navLinks(): { label: string; href: string }[] {
     { label: "Processo", href: "/processo" },
     { label: "Sobre nós", href: "/sobre" },
     { label: "Dúvidas", href: "/duvidas" },
-    ...(SITE.professionals !== null
-      ? [{ label: "Para profissionais", href: "/para-profissionais" }]
-      : []),
+    { label: "Para profissionais", href: "/para-profissionais" },
     { label: "Contato", href: "/contato" },
   ];
 }

@@ -43,13 +43,14 @@ Deployment: [`DEPLOY.md`](./DEPLOY.md) (cheat-sheet) and [`VPS-SETUP.md`](./VPS-
   product detail (`/catalogo/<slug>`, with a *Ficha técnica*), Processo (`/processo`),
   Dúvidas frequentes (`/duvidas`, with `FAQPage` JSON-LD), Sobre nós (`/sobre`),
   Contato (`/contato`, with the workshop address), Para profissionais
-  (`/para-profissionais`, **off by default**, see below), Admin (`/admin`) and a 404.
+  (`/para-profissionais`, "em construção" for now, see below), Admin (`/admin`) and a 404.
   Public pages share one header (with a mobile menu), footer and a floating WhatsApp
   button. The look follows the brand manual: Areia background, Bege panels, black
   text, Cobre accents, square corners (`--radius: 0`), Outfit type.
-- **Para profissionais** answers the 404 page until `SITE.professionals` in
+- **Para profissionais** is linked in the header and shows an "em construção" notice
+  (with a WhatsApp button, `noindex`, not in the sitemap) until `SITE.professionals` in
   `shared/content/site.ts` is filled in (`lead`, `offers`, `steps`, `ctaTitle`,
-  `ctaText`). Once it is, the page, its header link and its sitemap entry appear.
+  `ctaText`). Once it is, the full page and its sitemap entry appear.
 - **The quote flow:** every card and detail page has a one-tap "Pedir orçamento"
   WhatsApp button and an "Adicionar ao carrinho" option. The cart asks for the
   customer's name and bairro and opens WhatsApp with a message listing the chosen
@@ -59,12 +60,14 @@ Deployment: [`DEPLOY.md`](./DEPLOY.md) (cheat-sheet) and [`VPS-SETUP.md`](./VPS-
   travels into the message. At most one product carries the flag.
 - **Home page:** hero (headline, WhatsApp/portfólio buttons, illustration), a strip of
   differentials, "O que fazemos", the pieces marked *Destaque* (padded to six when
-  fewer than three are marked), "Da conversa à entrega" (four steps), the Experiência
-  band with stats, the Instagram block (handle and follow button always show; the post
+  fewer than three are marked), "Da conversa à entrega" (the five process steps, each
+  box linking to its panel on `/processo`), the Instagram block (handle and follow button always show; the post
   grid only renders once `SITE.instagramPosts` has entries), the reviews section (only
   once `SITE.reviews` is filled) and a closing call to action.
 - **Catálogo page extras:** below the grid, the "Na casa dos nossos clientes" strip of
-  installed-piece photos (admin's **Ambientes** tab) and the catalog PDF band. The band
+  installed-piece photos (admin's **Ambientes** tab) and the Verde Pedra catalog PDF band.
+  Past custom projects go in the *Personalizados* category; the home's "Projetos
+  personalizados" card links to that filter. The band
   always renders (its "Receber pelo WhatsApp" button); only the download button depends
   on `SITE.catalogPdf` (below).
 - **Product fields:** name, slug, category, description, materials, dimensions,
@@ -73,7 +76,7 @@ Deployment: [`DEPLOY.md`](./DEPLOY.md) (cheat-sheet) and [`VPS-SETUP.md`](./VPS-
   Acabamentos, Detalhes, Prazo (once `SITE.leadTime` is set) and Garantia, skipping
   empty rows. The editor has Acabamentos/Detalhes inputs (migration `drizzle/0005_*`).
 - **Content modules** live in `shared/content/`: `site.ts` (`SITE`: address, hours,
-  warranty, stats, `professionals`, `leadTime`, `catalogPdf`, `reviews`,
+  warranty, `professionals`, `leadTime`, `catalogPdf`, `reviews`,
   `instagramPosts`), `home.ts`, `processo.ts`, `faq.ts`, `sobre.ts`. **Rule: a null or
   empty field hides its section** (no placeholders ship). To publish a block, fill the
   field in `site.ts`; nothing else changes.
@@ -85,8 +88,7 @@ Deployment: [`DEPLOY.md`](./DEPLOY.md) (cheat-sheet) and [`VPS-SETUP.md`](./VPS-
 - **Hero illustration:** the brand-pattern placeholder is
   `client/src/components/home/HeroIllustration.tsx`; replace that component's content
   with the final illustration.
-- **Phase 2 (not built):** moving `catalogPdf`, `reviews`, `instagramPosts` and the
-  numeric stats into an admin-editable `site_settings` table with a fourth admin tab
+- **Phase 2 (not built):** moving `catalogPdf`, `reviews` and `instagramPosts` into an admin-editable `site_settings` table with a fourth admin tab
   is specified in §4.12 of
   `docs/superpowers/specs/2026-10-22-batch5-site-redesign-design.md`.
 - The catalog loads live from the API. Product data is seeded once on first boot
@@ -205,7 +207,8 @@ Every public URL is answered with a server-rendered `<head>`: title, description
 canonical, Open Graph and Twitter tags (the piece's cover photo on product pages,
 `client/public/og-default.jpg` elsewhere) and JSON-LD (`LocalBusiness` on the home
 page, `BreadcrumbList` on pieces). Unknown routes and unpublished pieces answer
-`404` with `noindex`; `/admin` is `noindex`. The strings live in `shared/seo-text.ts`
+`404` with `noindex`; `/admin` and the "em construção" Para profissionais page are
+`noindex`. The strings live in `shared/seo-text.ts`
 and the client reuses them for `document.title` after in-app navigation. Absolute
 URLs come from `SITE_URL` in `.env` (falls back to the request host). Regenerate the
 default share image after a logo change with `npm run og:image`.

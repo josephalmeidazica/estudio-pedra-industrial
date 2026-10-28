@@ -129,7 +129,7 @@ export default function Sobre() {
           <h2 className="heading-display text-[34px] leading-[1.1] md:text-5xl">{oficina.title}</h2>
         </div>
         <div className="grid gap-6 md:grid-cols-3 md:gap-8">
-          <div className={`${CARD} bg-background`}>
+          <div className={`${CARD} bg-card`}>
             <LineIcon name="pin" className="h-9 w-9" />
             <h3 className="text-[28px] font-light">Nossa oficina</h3>
             <div className="flex flex-col gap-1.5 text-[17px]">

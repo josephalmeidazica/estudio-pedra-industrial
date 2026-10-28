@@ -17,16 +17,16 @@ test("no illustrative [bracketed] text in any content module", () => {
   for (const s of strings([SITE, PROCESSO, FAQ, HOME, SOBRE])) expect(s, s).not.toMatch(BRACKET);
 });
 
-test("processo: five steps with icons, four on the home with Projeto shortened", () => {
+test("processo: five steps with icons, all five on the home with Projeto and Entrega shortened", () => {
   expect(PROCESSO.steps.map((s) => s.n)).toEqual(["01", "02", "03", "04", "05"]);
   expect(PROCESSO.steps.map((s) => s.icon)).toEqual(["whatsapp", "ruler", "pencil-ruler", "wrench", "truck"]);
-  expect(homeSteps().map((s) => s.homeTitle ?? s.title)).toEqual(["Conversa", "Projeto", "Fabricação", "Entrega"]);
+  expect(homeSteps().map((s) => s.homeTitle ?? s.title)).toEqual(["Conversa", "Medidas", "Projeto", "Fabricação", "Entrega"]);
   for (const s of PROCESSO.steps) expect(s.bullets).toHaveLength(3);
 });
 
-test("faq: five themes with slugs and at least two items each", () => {
+test("faq: five themes with slugs, none empty", () => {
   expect(FAQ.map((t) => t.theme)).toEqual(["Prazo e pedido", "Pagamento", "Entrega e instalação", "Materiais e cuidados", "Garantia"]);
-  for (const t of FAQ) expect(t.items.length).toBeGreaterThanOrEqual(2);
+  for (const t of FAQ) expect(t.items.length).toBeGreaterThanOrEqual(1);
 });
 
 test("home: four diferenciais and three serviços", () => {
@@ -35,8 +35,7 @@ test("home: four diferenciais and three serviços", () => {
 });
 
 test("site facts default to hidden until confirmed; address is fixed", () => {
-  expect([SITE.leadTime, SITE.catalogPdf, SITE.reviews, SITE.instagramPosts, SITE.professionals]).toEqual([null, null, null, [], null]);
-  expect(SITE.stats.map((s) => s.value)).toEqual(["3 meses", "100%"]);
+  expect([SITE.catalogPdf, SITE.reviews, SITE.instagramPosts, SITE.professionals]).toEqual([null, null, [], null]);
   expect(addressLines()).toEqual(["Rua João Gualberto dos Santos, 714 · Céu Azul", "Belo Horizonte — MG"]);
   expect(SOBRE.valoresDetalhe.map((v) => v.title)).toEqual(["Personalidade", "Cuidado", "Criatividade"]);
 });

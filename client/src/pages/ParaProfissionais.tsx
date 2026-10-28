@@ -1,6 +1,6 @@
 /*
   Estúdio Pedra Industrial - Página Para profissionais
-  Atrás de SITE.professionals: enquanto o conteúdo não existe, responde com a página 404.
+  Atrás de SITE.professionals: enquanto o conteúdo não existe, mostra um aviso de página em construção.
 */
 
 import type { CSSProperties } from "react";
@@ -9,7 +9,6 @@ import { SITE, type ProfessionalsContent } from "@shared/content/site";
 import { titles } from "@shared/seo-text";
 import { Layout } from "@/components/layout/Layout";
 import { ProductIcon } from "@/components/icons/ProductIcon";
-import NotFound from "@/pages/NotFound";
 import { ResponseBadge } from "@/components/ui/ResponseBadge";
 import { GENERIC_QUOTE_MESSAGE, whatsappUrl } from "@/lib/whatsapp";
 import { usePageTitle } from "@/lib/usePageTitle";
@@ -22,8 +21,32 @@ const OFFER_ICONS = ["estante-divisio", "mesa-office-l", "estrutura-gaia"];
 
 export default function ParaProfissionais() {
   const content = SITE.professionals;
-  if (!content) return <NotFound />;
+  if (!content) return <EmConstrucao />;
   return <Enabled content={content} />;
+}
+
+const BTN_BLACK =
+  "inline-flex h-[52px] items-center justify-center border border-foreground bg-foreground px-6 text-[13px] font-medium uppercase tracking-[0.12em] text-background hover:border-accent hover:bg-accent";
+
+function EmConstrucao() {
+  usePageTitle(titles.professionals());
+  return (
+    <Layout showCart>
+      <section className="bg-background py-24 md:py-40">
+        <div className="container flex max-w-2xl flex-col items-center gap-6 text-center">
+          <p className="lbl text-muted-foreground">Para profissionais</p>
+          <h1 className="heading-display text-[40px] leading-[1.05] md:text-6xl">Página em construção</h1>
+          <p className="text-[17px] leading-relaxed text-muted-foreground">
+            Em breve, tudo sobre parcerias com arquitetos, designers e lojistas. Enquanto isso, fale com a gente pelo
+            WhatsApp.
+          </p>
+          <a href={whatsappUrl(GENERIC_QUOTE_MESSAGE)} target="_blank" rel="noopener noreferrer" className={BTN_BLACK}>
+            Falar no WhatsApp
+          </a>
+        </div>
+      </section>
+    </Layout>
+  );
 }
 
 function Enabled({ content }: { content: ProfessionalsContent }) {

@@ -32,6 +32,6 @@ export const HOME = {
   ] as { icon: "mesa-urb" | "reforma-sofa" | "mesa-office-l"; title: string; text: string; linkLabel: string }[],
   cta: {
     title: "Transforme seu espaço.",
-    text: "Conte o que você imagina e receba um orçamento sob medida pelo WhatsApp.",
+    text: "Conta pra gente o que você imagina e receba um orçamento sob medida pelo WhatsApp.",
   },
 };
