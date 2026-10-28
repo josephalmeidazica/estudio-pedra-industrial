@@ -147,7 +147,7 @@ test("new routes, titles, flagged professionals page, sitemap entries", () => {
   expect(resolveRoute("/para-profissionais", "")).toEqual({ kind: "professionals" });
   expect(buildHead({ route: { kind: "about" }, siteUrl: site, path: "/sobre" }).title).toBe("Sobre nós — Estúdio Pedra Industrial");
   const off = buildHead({ route: { kind: "professionals" }, siteUrl: site, path: "/para-profissionais", professionalsEnabled: false });
-  expect([off.status, off.robots]).toEqual([404, "noindex, nofollow"]);
+  expect([off.status, off.robots, off.canonical]).toEqual([200, "noindex, follow", null]);
   const on = buildHead({ route: { kind: "professionals" }, siteUrl: site, path: "/para-profissionais", professionalsEnabled: true });
   expect([on.status, on.title]).toEqual([200, "Para profissionais — Estúdio Pedra Industrial"]);
   expect(sitemapEntries([], false).map((e) => e.path)).toEqual(["/", "/catalogo", "/processo", "/duvidas", "/sobre", "/contato"]);

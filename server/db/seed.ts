@@ -5,14 +5,30 @@ import type { DB } from "./client";
 import { processImage } from "../lib/imagePipeline";
 import { products, productImages } from "./schema";
 
-const SEED: { slug: string; name: string; description: string; category: string; isCustom?: boolean }[] = [
-  { slug: "estrutura-gaia", name: "Estrutura Gaia", description: "Estrutura modular que se adapta a qualquer espaço", category: "Estruturas" },
-  { slug: "estante-divisio", name: "Estante Divisio", description: "Estante modular em aço carbono e MDF que divide espaços com elegância", category: "Estantes" },
-  { slug: "luminaria-lua", name: "Luminária Lua", description: "Luminária artesanal que traz a serenidade da lua para seus ambientes", category: "Luminárias" },
-  { slug: "luminaria-sol", name: "Luminária Sol", description: "Luminária que aquece e ilumina com a energia do sol", category: "Luminárias" },
+// Mesa Urb carries example ficha técnica fields until the studio writes them for every piece.
+const SEED: {
+  slug: string;
+  name: string;
+  description: string;
+  category: string;
+  isCustom?: boolean;
+  finishes?: string;
+  details?: string;
+}[] = [
+  { slug: "estrutura-gaia", name: "Estrutura Gaia", description: "Estrutura modular para plantas que se adapta a qualquer ambiente", category: "Estruturas" },
+  { slug: "estante-divisio", name: "Estante Divisio", description: "Estante modular em aço carbono e MDF que organiza espaços com elegância", category: "Estantes" },
+  { slug: "luminaria-lua", name: "Luminária Lua", description: "Luminária com ângulos arredondados que traz a serenidade para os seus ambientes", category: "Luminárias" },
+  { slug: "luminaria-sol", name: "Luminária Sol", description: "Luminária com ângulos retos que ilumina o seu ambiente", category: "Luminárias" },
   { slug: "mesa-cabeceira-loft", name: "Mesa de Cabeceira Loft", description: "Minimalismo, força e identidade urbana. Opções com gaveta e gaveta + nicho", category: "Mesas" },
-  { slug: "mesa-office-l", name: "Mesa Office L", description: "Mesa de escritório em formato L, perfeita para home office", category: "Mesas" },
-  { slug: "mesa-urb", name: "Mesa Urb", description: "Mesa urbana em aço carbono com design contemporâneo", category: "Mesas" },
+  { slug: "mesa-office-l", name: "Mesa Office", description: "Mesas de escritório padronizadas ou em formato L, perfeitas para home office", category: "Mesas" },
+  {
+    slug: "mesa-urb",
+    name: "Mesa Urb",
+    description: "Mesa compacta para sala ou quarto em aço carbono com design contemporâneo",
+    category: "Mesas",
+    finishes: "Preto fosco (padrão) · outras cores sob consulta",
+    details: "Base em C que entra por baixo do sofá ou da cama\nSapatas niveladoras",
+  },
   { slug: "penteadeira-glam", name: "Penteadeira Glam", description: "Penteadeira sofisticada que combina funcionalidade e elegância", category: "Penteadeiras" },
   { slug: "movel-personalizado", name: "Móvel personalizado", description: "Não achou o que procura? Descreva o móvel dos seus sonhos e fazemos sob medida.", category: "Personalizados", isCustom: true },
 ];
@@ -31,6 +47,8 @@ export async function seedIfEmpty(db: DB): Promise<void> {
       category: p.category,
       materials: "Aço carbono, MDF",
       dimensions: "",
+      finishes: p.finishes ?? "",
+      details: p.details ?? "",
       price: null,
       featured: false,
       isCustom: p.isCustom ?? false,

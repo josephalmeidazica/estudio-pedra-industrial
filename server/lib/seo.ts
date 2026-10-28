@@ -22,7 +22,7 @@ export type HeadData = {
   title: string;
   description: string | null;
   canonical: string | null;
-  robots: "index, follow" | "noindex, nofollow";
+  robots: "index, follow" | "noindex, follow" | "noindex, nofollow";
   ogType: "website" | "product";
   image: HeadImage | null;
   url: string;
@@ -243,7 +243,9 @@ export function buildHead({
     case "about":
       return { ...base, title: titles.about(), description: descriptions.about(), canonical: siteUrl + "/sobre" };
     case "professionals":
-      if (!professionalsEnabled) return notFoundHead(siteUrl, path);
+      // Until the content exists the page says "em construção": reachable from the menu, kept out of search.
+      if (!professionalsEnabled)
+        return { ...base, title: titles.professionals(), description: descriptions.professionals(), canonical: null, robots: "noindex, follow" };
       return {
         ...base,
         title: titles.professionals(),

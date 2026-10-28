@@ -92,7 +92,9 @@ test("product page head, 404s, og image, sitemap and robots", async () => {
     expect(xml).not.toContain("rascunho");
     for (const p of ["/processo", "/duvidas", "/sobre"]) expect(xml).toContain(`${p}</loc>`);
     expect(xml).not.toContain("/para-profissionais");
-    expect((await get("/para-profissionais")).status).toBe(404);
+    const pro = await get("/para-profissionais");
+    expect(pro.status).toBe(200);
+    expect(await pro.text()).toContain('content="noindex, follow"');
     expect(await (await get("/sobre")).text()).toContain("<title>Sobre nós — Estúdio Pedra Industrial</title>");
     expect(await (await get("/robots.txt")).text()).toContain("Disallow: /admin");
 

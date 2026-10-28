@@ -12,7 +12,7 @@ const ICON_SIZE: Record<string, string> = {
 
 export function Servicos({ products }: { products: PublicProduct[] }) {
   const hasReformas = extractCategories(products).some((c) => c.slug === "reformas");
-  const hrefs = ["/catalogo", hasReformas ? "/catalogo?categoria=reformas" : "/catalogo", "/catalogo#sob-medida"];
+  const hrefs = ["/catalogo", hasReformas ? "/catalogo?categoria=reformas" : "/catalogo", "/catalogo?categoria=personalizados"];
   return (
     <section id="servicos" className="py-16 lg:py-24">
       <div className="container flex flex-col gap-10 lg:gap-14">

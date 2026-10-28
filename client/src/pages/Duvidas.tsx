@@ -71,7 +71,7 @@ export default function Duvidas() {
                   <AccordionTrigger className="py-5 text-[17px] font-normal leading-snug">
                     <span className="min-w-0">{item.q}</span>
                   </AccordionTrigger>
-                  <AccordionContent className="pr-8 text-[15px] leading-relaxed text-muted-foreground">
+                  <AccordionContent className="whitespace-pre-line pr-8 text-[15px] leading-relaxed text-muted-foreground">
                     {item.a}
                   </AccordionContent>
                 </AccordionItem>

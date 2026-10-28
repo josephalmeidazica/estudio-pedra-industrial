@@ -48,7 +48,7 @@ export default function Catalog() {
           <h1 className="heading-display text-5xl text-foreground md:text-6xl">Portfólio de produtos</h1>
           <p className="max-w-[640px] text-[17px] leading-relaxed text-muted-foreground">
             Explore a nossa coleção de móveis industriais. Além das peças deste portfólio, fazemos projetos
-            personalizados sob medida: descreva o móvel que você imagina.
+            personalizados sob medida: entre em contato conosco e saiba mais.
           </p>
         </div>
       </section>

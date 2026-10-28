@@ -1,5 +1,6 @@
 import { slugify } from "../slug";
 
+/** `a` may hold several paragraphs separated by "\n"; the page keeps the line breaks. */
 export type FaqItem = { q: string; a: string };
 
 const THEMES: { theme: string; items: FaqItem[] }[] = [
@@ -7,20 +8,20 @@ const THEMES: { theme: string; items: FaqItem[] }[] = [
     theme: "Prazo e pedido",
     items: [
       {
-        q: "Quanto tempo leva para ficar pronta uma peça?",
-        a: "Depende da peça e da fila da oficina. Luminárias e mesas de cabeceira costumam ser mais rápidas; estantes e móveis grandes, mais demoradas. O prazo exato vai no orçamento.",
+        q: "Quanto tempo leva para uma peça ficar pronta?",
+        a: "Nossas peças são feitas de forma artesanal, então vai depender do projeto, mas pedimos de 2 a 5 semanas para realização e entrega.",
       },
       {
-        q: "Vocês fazem só o que está no portfólio?",
-        a: "Não. O portfólio mostra peças que já fizemos, mas a maior parte dos pedidos é sob medida: mudamos medidas, cores e materiais ou desenhamos algo do zero a partir da sua referência.",
+        q: "Vocês produzem apenas os produtos que aparecem no portfólio?",
+        a: "Não, fazemos projetos personalizados sob medida. Entre em contato conosco e saiba mais.",
       },
       {
         q: "Preciso saber as medidas exatas para pedir orçamento?",
-        a: "Não. Mande as medidas aproximadas que conferimos depois, pessoalmente em BH e região ou com um guia simples de medição.",
+        a: "Não, para solicitar um orçamento, precisamos da ideia e de medidas aproximadas. No momento da compra dos materiais e da produção, aí sim, são necessárias as medidas exatas.",
       },
       {
         q: "Posso ver o projeto antes de fechar?",
-        a: "Sim. Você recebe a ficha técnica com desenho, medidas, materiais e acabamento, e nada é cortado antes da sua aprovação.",
+        a: "Sim, enviamos um projeto em 3D no SketchUp para você visualizar antes de tomar a decisão!",
       },
     ],
   },
@@ -28,12 +29,12 @@ const THEMES: { theme: string; items: FaqItem[] }[] = [
     theme: "Pagamento",
     items: [
       {
-        q: "Como funciona o pagamento?",
-        a: "Combinamos um sinal para iniciar a produção e o restante na entrega. As formas de pagamento vão no orçamento.",
+        q: "Quais são as formas de pagamento?",
+        a: "Aceitamos pagamento via Pix, débito ou crédito. As taxas no crédito estão sujeitas a modificações de acordo com o parcelamento. No Pix, há um desconto de 5%.\nImportante lembrar que, para todo projeto, solicitamos o pagamento de um sinal de 50%, para que a compra dos materiais seja realizada. A forma de pagamento do sinal é somente à vista.",
       },
       {
         q: "O orçamento tem custo?",
-        a: "Não. A conversa, a estimativa e o orçamento fechado são gratuitos. As condições da visita técnica são combinadas no WhatsApp.",
+        a: "Não! Enviamos um orçamento em PDF e um projeto em 3D no SketchUp de forma totalmente gratuita. Você só paga depois de fechar conosco!",
       },
     ],
   },
@@ -42,11 +43,11 @@ const THEMES: { theme: string; items: FaqItem[] }[] = [
     items: [
       {
         q: "Vocês entregam onde?",
-        a: "Atendemos Belo Horizonte e região metropolitana, com entrega e instalação agendadas. Para outras cidades, consulte: avaliamos caso a caso o envio.",
+        a: "Entregamos em BH e região metropolitana (a combinar). Além disso, estamos situados no bairro Céu Azul, onde também é possível fazer a retirada dos produtos.",
       },
       {
         q: "A instalação está incluída?",
-        a: "Peças que precisam de fixação na parede, como estantes e prateleiras, são instaladas pela nossa equipe em BH e região. Peças soltas, como mesas e luminárias, chegam prontas para usar.",
+        a: "Sim, colocamos no orçamento o valor da instalação, mas caso não deseje, é só pedir pra gente retirar!",
       },
     ],
   },
@@ -55,15 +56,15 @@ const THEMES: { theme: string; items: FaqItem[] }[] = [
     items: [
       {
         q: "Quais materiais vocês usam?",
-        a: "Aço carbono na estrutura, com pintura eletrostática, e MDF ou madeira nos tampos e prateleiras. Outros materiais, como vidro e madeira maciça, sob consulta.",
+        a: "Todos os nossos projetos são realizados com o metalon fabricado em aço carbono e o MDF em diferentes tonalidades.",
       },
       {
-        q: "Posso escolher a cor da estrutura?",
-        a: "Sim. O preto fosco é o padrão, e outras cores da carta de pintura eletrostática podem ser escolhidas no projeto.",
+        q: "Posso escolher a cor da estrutura e do MDF?",
+        a: "Sim! Todo o projeto é 100% personalizável, você escolhe desde a cor da estrutura, até mesmo o formato da lâmpada.",
       },
       {
-        q: "Como cuidar do aço carbono?",
-        a: "Pano macio seco ou levemente úmido; nada de produtos abrasivos. Em áreas externas cobertas a pintura protege bem, mas evite chuva direta. Pequenos riscos podem ser retocados: é só nos chamar.",
+        q: "Como cuidar das minhas peças?",
+        a: "O cuidado com o MDF e com o metalon é bem simples:\nSugerimos não deixar as peças expostas ao sol e chuva frequentes;\nPara realizar a limpeza das peças, opte por panos úmidos sem produtos corrosivos ou que possam danificar as estruturas. A água e, de vez em quando, um desinfetante funcionam bem.",
       },
     ],
   },
@@ -72,11 +73,7 @@ const THEMES: { theme: string; items: FaqItem[] }[] = [
     items: [
       {
         q: "Qual é a garantia?",
-        a: "3 meses contra defeitos de fabricação, como solda, pintura e estrutura. Danos por uso, umidade ou transporte feito por terceiros não estão cobertos.",
-      },
-      {
-        q: "E se a peça chegar diferente do projeto?",
-        a: "Conferimos as medidas antes da entrega, mas se algo não bater com a ficha técnica aprovada, corrigimos sem custo.",
+        a: "Aqui no Estúdio, todas as peças possuem 3 meses de garantia. Na parte inferior da sua peça terá um selo com a data que o produto foi entregue e este selo garantirá a possível manutenção, caso se faça necessária. Sendo assim, é importante que você não retire esta etiqueta e não a danifique.",
       },
     ],
   },
