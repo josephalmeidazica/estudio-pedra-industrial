@@ -4,58 +4,81 @@ import path from "node:path";
 import type { DB } from "./client";
 import { processImage } from "../lib/imagePipeline";
 import { products, productImages } from "./schema";
+import { CATALOG, type CatalogPiece } from "./catalog";
 
-// Mesa Urb carries example ficha técnica fields until the studio writes them for every piece.
-const SEED: {
-  slug: string;
-  name: string;
-  description: string;
-  category: string;
-  isCustom?: boolean;
-  finishes?: string;
-  details?: string;
-}[] = [
-  { slug: "estrutura-gaia", name: "Estrutura Gaia", description: "Estrutura modular para plantas que se adapta a qualquer ambiente", category: "Estruturas" },
-  { slug: "estante-divisio", name: "Estante Divisio", description: "Estante modular em aço carbono e MDF que organiza espaços com elegância", category: "Estantes" },
-  { slug: "luminaria-lua", name: "Luminária Lua", description: "Luminária com ângulos arredondados que traz a serenidade para os seus ambientes", category: "Luminárias" },
-  { slug: "luminaria-sol", name: "Luminária Sol", description: "Luminária com ângulos retos que ilumina o seu ambiente", category: "Luminárias" },
-  { slug: "mesa-cabeceira-loft", name: "Mesa de Cabeceira Loft", description: "Minimalismo, força e identidade urbana. Opções com gaveta e gaveta + nicho", category: "Mesas" },
-  { slug: "mesa-office-l", name: "Mesa Office", description: "Mesas de escritório padronizadas ou em formato L, perfeitas para home office", category: "Mesas" },
-  {
-    slug: "mesa-urb",
-    name: "Mesa Urb",
-    description: "Mesa compacta para sala ou quarto em aço carbono com design contemporâneo",
-    category: "Mesas",
-    finishes: "Preto fosco (padrão) · outras cores sob consulta",
-    details: "Base em C que entra por baixo do sofá ou da cama\nSapatas niveladoras",
-  },
-  { slug: "penteadeira-glam", name: "Penteadeira Glam", description: "Penteadeira sofisticada que combina funcionalidade e elegância", category: "Penteadeiras" },
-  { slug: "movel-personalizado", name: "Móvel personalizado", description: "Não achou o que procura? Descreva o móvel dos seus sonhos e fazemos sob medida.", category: "Personalizados", isCustom: true },
-];
-
-const CUSTOM = SEED[SEED.length - 1];
+const SEED = CATALOG;
+const CUSTOM = SEED.find((p) => p.isCustom)!;
 const LEGACY_CUSTOM_SLUG = "projetos-personalizados";
+
+function rowOf(p: CatalogPiece, sortOrder: number) {
+  return {
+    slug: p.slug,
+    name: p.name,
+    description: p.description,
+    category: p.category,
+    materials: p.materials,
+    dimensions: p.dimensions,
+    finishes: p.finishes,
+    details: p.details,
+    leadTime: p.leadTime,
+    price: p.price,
+    featured: false,
+    isCustom: p.isCustom ?? false,
+    published: p.published,
+    sortOrder,
+  };
+}
 
 export async function seedIfEmpty(db: DB): Promise<void> {
   const existing = await db.select({ id: products.id }).from(products).limit(1);
   if (existing.length > 0) return;
-  await db.insert(products).values(
-    SEED.map((p, i) => ({
-      slug: p.slug,
-      name: p.name,
-      description: p.description,
-      category: p.category,
-      materials: "Aço carbono, MDF",
-      dimensions: "",
-      finishes: p.finishes ?? "",
-      details: p.details ?? "",
-      price: null,
-      featured: false,
-      isCustom: p.isCustom ?? false,
-      published: true,
-      sortOrder: i,
-    }))
-  );
+  await db.insert(products).values(SEED.map((p, i) => rowOf(p, i)));
+}
+
+/**
+ * Values the first seed shipped as stand-ins before the studio sent its fichas
+ * (every piece had "Aço carbono, MDF"; Mesa Urb had example finishes/details).
+ * The import treats them like empty fields.
+ */
+const PLACEHOLDERS: Partial<Record<"materials" | "finishes" | "details", string[]>> = {
+  materials: ["Aço carbono, MDF"],
+  finishes: ["Preto fosco (padrão) · outras cores sob consulta"],
+  details: ["Base em C que entra por baixo do sofá ou da cama\nSapatas niveladoras"],
+};
+
+/**
+ * Brings an already-seeded database up to the catalogue (`npm run catalog:import`).
+ * For each catalogue piece that exists (Lixeira included), fills only ficha
+ * fields that are empty or still hold a seed placeholder, and the price/prazo
+ * only when unset: whatever the owner typed is kept. Pieces whose address
+ * never existed are added as unpublished drafts. Safe to run more than once.
+ */
+export async function importCatalog(db: DB): Promise<{ filled: string[]; added: string[] }> {
+  const filled: string[] = [];
+  const added: string[] = [];
+  const all = await db.select().from(products);
+  const bySlug = new Map(all.map((r) => [r.slug, r]));
+  let nextSort = all.reduce((m, r) => Math.max(m, r.sortOrder), -1) + 1;
+
+  for (const piece of CATALOG) {
+    const row = bySlug.get(piece.slug);
+    if (!row) {
+      await db.insert(products).values({ ...rowOf(piece, nextSort++), published: false });
+      added.push(piece.slug);
+      continue;
+    }
+    const patch: Record<string, unknown> = {};
+    for (const k of ["materials", "dimensions", "finishes", "details", "leadTime"] as const) {
+      const current = row[k].trim();
+      const stale = current === "" || (PLACEHOLDERS[k as keyof typeof PLACEHOLDERS] ?? []).includes(current);
+      if (stale && piece[k] !== "" && piece[k] !== current) patch[k] = piece[k];
+    }
+    if (row.price == null && piece.price != null) patch.price = piece.price;
+    if (Object.keys(patch).length === 0) continue;
+    await db.update(products).set({ ...patch, updatedAt: new Date() }).where(eq(products.id, row.id));
+    filled.push(piece.slug);
+  }
+  return { filled, added };
 }
 
 /**
@@ -75,9 +98,9 @@ export async function ensureCustomProduct(db: DB): Promise<void> {
     .where(eq(products.id, legacy[0].id));
 }
 
-/** Default photo file (under client/public/products/) per seeded slug. */
+/** Default photo file (under client/public/products/) per seeded slug; drafts have none yet. */
 export const DEFAULT_PRODUCT_IMAGE_FILES: Record<string, string> = Object.fromEntries(
-  SEED.map((p) => [p.slug, `${p.slug}.jpg`])
+  SEED.filter((p) => p.published).map((p) => [p.slug, `${p.slug}.jpg`])
 );
 
 // Anchored to process.cwd() — see server/db/client.ts.

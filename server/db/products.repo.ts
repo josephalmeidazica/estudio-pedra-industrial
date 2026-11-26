@@ -6,6 +6,7 @@ import {
   type Product,
   type ProductImage,
   type ProductWithImages,
+  type PublicProductWithImages,
 } from "./schema";
 import { makeUniqueSlug, slugify } from "../lib/slug";
 import { DRAFT_PRODUCT_NAME } from "../../shared/draft";
@@ -33,13 +34,18 @@ async function attachImages(db: DB, rows: Product[]): Promise<ProductWithImages[
 
 const notDeleted = isNull(products.deletedAt);
 
-export async function listPublished(db: DB): Promise<ProductWithImages[]> {
+/** Drops the owner-only price before a product goes to a public endpoint. */
+function toPublic({ price: _price, ...rest }: ProductWithImages): PublicProductWithImages {
+  return rest;
+}
+
+export async function listPublished(db: DB): Promise<PublicProductWithImages[]> {
   const rows = await db
     .select()
     .from(products)
     .where(and(eq(products.published, true), notDeleted))
     .orderBy(asc(products.sortOrder));
-  return attachImages(db, rows);
+  return (await attachImages(db, rows)).map(toPublic);
 }
 
 /** Every product that is not in the Lixeira (drafts included). */
@@ -56,14 +62,14 @@ export async function getBySlug(db: DB, slug: string): Promise<ProductWithImages
 }
 
 /** Public lookup: unpublished and deleted products are indistinguishable from missing ones. */
-export async function getPublishedBySlug(db: DB, slug: string): Promise<ProductWithImages | null> {
+export async function getPublishedBySlug(db: DB, slug: string): Promise<PublicProductWithImages | null> {
   const rows = await db
     .select()
     .from(products)
     .where(and(eq(products.slug, slug), eq(products.published, true), notDeleted))
     .limit(1);
   if (rows.length === 0) return null;
-  return (await attachImages(db, rows))[0];
+  return toPublic((await attachImages(db, rows))[0]);
 }
 
 export type CreateProductInput = {
@@ -75,6 +81,7 @@ export type CreateProductInput = {
   dimensions?: string;
   finishes?: string;
   details?: string;
+  leadTime?: string;
   price?: number | null;
   featured?: boolean;
   isCustom?: boolean;
@@ -111,6 +118,7 @@ export async function createProduct(db: DB, input: CreateProductInput): Promise<
       dimensions: input.dimensions ?? "",
       finishes: input.finishes ?? "",
       details: input.details ?? "",
+      leadTime: input.leadTime ?? "",
       price: input.price ?? null,
       featured: input.featured ?? false,
       isCustom: input.isCustom ?? false,
@@ -132,7 +140,7 @@ export async function updateProduct(
   const values: Record<string, unknown> = { updatedAt: new Date() };
   const fields = [
     "name", "description", "category", "materials",
-    "dimensions", "finishes", "details", "price", "featured", "isCustom", "published", "sortOrder",
+    "dimensions", "finishes", "details", "leadTime", "price", "featured", "isCustom", "published", "sortOrder",
   ] as const;
   for (const k of fields) if (patch[k] !== undefined) values[k] = patch[k];
 

@@ -143,3 +143,12 @@ test("finishes and details round-trip; defaults are empty", async () => {
   expect(b!.finishes).toBe("Preto fosco");
   expect((await repo.listPublished(db))[0].details).toBe("Base em C\nSapatas");
 });
+
+test("public reads never carry the owner's reference price", async () => {
+  const db = freshDb();
+  await repo.createProduct(db, { name: "Mesa Urb", price: 185, published: true });
+  const [listed] = await repo.listPublished(db);
+  expect(listed).not.toHaveProperty("price");
+  expect(await repo.getPublishedBySlug(db, "mesa-urb")).not.toHaveProperty("price");
+  expect((await repo.getBySlug(db, "mesa-urb"))?.price).toBe(185);
+});

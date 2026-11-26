@@ -8,6 +8,7 @@ export const emptyForm = {
   dimensions: "",
   finishes: "",
   details: "",
+  leadTime: "",
   price: "",
   featured: false,
   isCustom: false,
@@ -22,6 +23,7 @@ export type ProductPatch = {
   dimensions: string;
   finishes: string;
   details: string;
+  leadTime: string;
   price: number | null;
   featured: boolean;
   isCustom: boolean;
@@ -52,6 +54,7 @@ export function buildProductPatch(
     dimensions: form.dimensions,
     finishes: form.finishes,
     details: form.details,
+    leadTime: form.leadTime.trim(),
     price,
     featured: form.featured,
     isCustom: form.isCustom,

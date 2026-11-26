@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { buildProductPatch, emptyForm, type ProductForm as Form } from "@/lib/productPatch";
 import { isUnauthorizedError } from "@/lib/sessionErrors";
 import { trpc } from "@/lib/trpc";
+import { SITE } from "@shared/content/site";
 import { DRAFT_PRODUCT_NAME } from "@shared/draft";
 import { ImageManager } from "./ImageManager";
 
@@ -107,6 +108,7 @@ export function ProductEditor({ open, onOpenChange, productId }: Props) {
       dimensions: product.dimensions,
       finishes: product.finishes,
       details: product.details,
+      leadTime: product.leadTime,
       price: product.price == null ? "" : String(product.price),
       featured: product.featured,
       isCustom: product.isCustom,
@@ -240,7 +242,7 @@ export function ProductEditor({ open, onOpenChange, productId }: Props) {
             </div>
             <div className="space-y-1">
               <Label htmlFor="p-dim">Dimensões</Label>
-              <Input id="p-dim" placeholder="Ex.: 120 × 60 × 75 cm" value={form.dimensions} onChange={(e) => set("dimensions", e.target.value)} />
+              <Textarea id="p-dim" rows={2} placeholder={"Ex.: 120 × 60 × 75 cm\nUma linha por versão"} value={form.dimensions} onChange={(e) => set("dimensions", e.target.value)} />
             </div>
           </div>
           <div className="space-y-1">
@@ -250,6 +252,15 @@ export function ProductEditor({ open, onOpenChange, productId }: Props) {
           <div className="space-y-1">
             <Label htmlFor="p-det">Detalhes</Label>
             <Textarea id="p-det" rows={3} placeholder="Um detalhe por linha" value={form.details} onChange={(e) => set("details", e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="p-lead">Prazo</Label>
+            <Input
+              id="p-lead"
+              placeholder={SITE.leadTime ? `Vazio = ${SITE.leadTime}` : "Ex.: 2 a 3 semanas após a aprovação do projeto"}
+              value={form.leadTime}
+              onChange={(e) => set("leadTime", e.target.value)}
+            />
           </div>
 
           <Collapsible open={moreOpen} onOpenChange={setMoreOpen}>
@@ -273,7 +284,7 @@ export function ProductEditor({ open, onOpenChange, productId }: Props) {
                 />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="p-price">Preço (vazio = sob consulta)</Label>
+                <Label htmlFor="p-price">Preço de referência (não aparece no site)</Label>
                 <Input id="p-price" type="number" value={form.price} onChange={(e) => set("price", e.target.value)} />
               </div>
               <div className="flex flex-wrap items-center gap-6">
