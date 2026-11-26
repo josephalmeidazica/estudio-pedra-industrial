@@ -43,6 +43,13 @@
       "when": 1792684916916,
       "tag": "0005_aromatic_raza",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1795707239847,
+      "tag": "0006_round_lockjaw",
+      "breakpoints": true
     }
   ]
 }

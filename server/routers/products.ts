@@ -13,6 +13,7 @@ const createInput = z.object({
   dimensions: z.string().optional(),
   finishes: z.string().optional(),
   details: z.string().optional(),
+  leadTime: z.string().optional(),
   price: z.number().nullable().optional(),
   featured: z.boolean().optional(),
   isCustom: z.boolean().optional(),

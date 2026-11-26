@@ -11,6 +11,8 @@ export const products = sqliteTable("products", {
   dimensions: text("dimensions").notNull().default(""),
   finishes: text("finishes").notNull().default(""),
   details: text("details").notNull().default(""),
+  // Per-piece "Prazo" for the ficha; empty falls back to SITE.leadTime.
+  leadTime: text("leadTime").notNull().default(""),
   price: real("price"),
   featured: integer("featured", { mode: "boolean" }).notNull().default(false),
   // The "Móvel personalizado" entry: adding it asks for a description. At most
@@ -68,3 +70,5 @@ export type NewProduct = typeof products.$inferInsert;
 export type ProductImage = typeof productImages.$inferSelect;
 export type NewProductImage = typeof productImages.$inferInsert;
 export type ProductWithImages = Product & { images: ProductImage[] };
+/** What public endpoints return: the price is the owner's reference only and never leaves the admin. */
+export type PublicProductWithImages = Omit<ProductWithImages, "price">;

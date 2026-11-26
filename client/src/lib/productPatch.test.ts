@@ -26,3 +26,7 @@ test("finishes and details travel in the patch", () => {
   expect(buildProductPatch(form, live, { slugDirty: false })).toMatchObject({ finishes: "Preto", details: "a\nb" });
   expect(buildProductPatch(emptyForm, live, { slugDirty: false })).toMatchObject({ finishes: "", details: "" });
 });
+
+test("the piece's prazo travels in the patch", () => {
+  expect(buildProductPatch({ ...emptyForm, name: "Mesa", leadTime: "7 dias" }, live, { slugDirty: false })).toMatchObject({ leadTime: "7 dias" });
+});

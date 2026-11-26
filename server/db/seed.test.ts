@@ -4,7 +4,8 @@ import path from "node:path";
 import { afterEach, beforeEach, expect, test } from "vitest";
 import { createDb, type DB } from "./client";
 import * as repo from "./products.repo";
-import { ensureCustomProduct, ensureProductImages, seedIfEmpty } from "./seed";
+import { softDelete } from "./trash.repo";
+import { ensureCustomProduct, ensureProductImages, importCatalog, seedIfEmpty } from "./seed";
 
 const dirs: string[] = [];
 const openDbs: DB[] = [];
@@ -25,15 +26,49 @@ afterEach(() => {
   while (dirs.length) fs.rmSync(dirs.pop()!, { recursive: true, force: true });
 });
 
-test("seeds 9 products once and is idempotent", async () => {
+test("seeds the catalogue once: 9 published pieces with their fichas, the rest as drafts", async () => {
   const db = freshDb();
   await seedIfEmpty(db);
   const first = await repo.listPublished(db);
   expect(first).toHaveLength(9);
   expect(first[0].slug).toBe("estrutura-gaia");
-  expect(first[0].materials).toBe("Aço carbono, MDF");
+  expect(first[0].materials).toBe("Aço carbono (tubo 20 × 20 mm) e tampo em pinus");
+  expect(first[0].leadTime).toBe("2 a 3 semanas após a aprovação do projeto");
+  expect(await repo.listAll(db)).toHaveLength(17);
+  expect((await repo.getBySlug(db, "clavis"))?.published).toBe(false);
   await seedIfEmpty(db);
-  expect(await repo.listPublished(db)).toHaveLength(9);
+  expect(await repo.listAll(db)).toHaveLength(17);
+});
+
+test("importCatalog fills empty and placeholder fields, keeps the owner's text, adds missing drafts once", async () => {
+  const db = freshDb();
+  // A database seeded by the first version: placeholder materials, owner-edited finishes.
+  const urb = await repo.createProduct(db, {
+    name: "Mesa Urb",
+    materials: "Aço carbono, MDF",
+    finishes: "Cor escolhida pelo cliente",
+    details: "Base em C que entra por baixo do sofá ou da cama\nSapatas niveladoras",
+  });
+  const gone = await repo.createProduct(db, { name: "Clavis" });
+  await softDelete(db, "product", gone.id); // in the Lixeira: its address stays reserved
+
+  const { filled, added } = await importCatalog(db);
+  expect(filled).toContain("mesa-urb");
+  expect(added).toContain("estante-veredas");
+  expect(added).not.toContain("clavis");
+
+  const after = (await repo.getBySlug(db, "mesa-urb"))!;
+  expect(after.materials).toBe("MDF e aço carbono (tubo 20 × 20 mm)");
+  expect(after.finishes).toBe("Cor escolhida pelo cliente");
+  expect(after.details).toContain("Encaixe em C");
+  expect(after.leadTime).toBe("7 dias após a aprovação do projeto");
+  expect(after.price).toBe(185);
+  expect((await repo.getBySlug(db, "estante-veredas"))?.published).toBe(false);
+
+  const count = (await repo.listAll(db)).length;
+  expect(await importCatalog(db)).toEqual({ filled: [], added: [] });
+  expect(await repo.listAll(db)).toHaveLength(count);
+  expect(urb.id).toBe(after.id);
 });
 
 test("ensureProductImages attaches one processed default image per product, idempotently", async () => {
@@ -53,10 +88,10 @@ test("ensureProductImages attaches one processed default image per product, idem
   const again = await repo.getBySlug(db, "mesa-urb");
   expect(again?.images).toHaveLength(1);
 
-  // every seeded product got exactly one image
+  // every published product got exactly one image; drafts wait for the owner's photo
   const all = await repo.listAll(db);
-  expect(all).toHaveLength(9);
-  for (const p of all) expect(p.images).toHaveLength(1);
+  expect(all).toHaveLength(17);
+  for (const p of all) expect(p.images).toHaveLength(p.published ? 1 : 0);
 
   const byKeys = (slug: string) => Object.keys(all.find((p) => p.slug === slug)!.images[0].variants);
   expect(byKeys("mesa-office-l")).toEqual(["480", "960", "1600"]); // 1600x1600
